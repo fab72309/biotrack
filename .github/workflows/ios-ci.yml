@@ -11,33 +11,24 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Build (iOS Simulator)
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift Package dependencies
         run: |
           xcodebuild \
             -project BioTrack.xcodeproj \
             -scheme BioTrack \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -resolvePackageDependencies
+
+      - name: Build (iOS Simulator)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project BioTrack.xcodeproj \
+            -scheme BioTrack \
             -configuration Debug \
+            -destination 'platform=iOS Simulator,OS=latest,name=iPhone 15 Pro' \
+            CODE_SIGNING_ALLOWED=NO \
             build
-
-name: iOS CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install XcodeGen
-        run: brew install xcodegen
-      - name: Generate Xcode project
-        run: xcodegen generate
-      - name: Show Xcode version
-        run: xcodebuild -version
-      - name: Build
-        run: xcodebuild -scheme BioTrack -project BioTrack.xcodeproj -configuration Debug -destination 'generic/platform=iOS' build
