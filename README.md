@@ -1,5 +1,7 @@
 # BioTrack (MVP) — iOS SwiftUI Skeleton
 
+[![iOS CI](https://github.com/fab72309/biotrack/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/fab72309/biotrack/actions/workflows/ios-ci.yml)
+
 Skeleton iOS app for **BioTrack**, a biohacking tracker focused on checklists, metrics, stats, protocols and supplements.  
 This repo is designed to be minimal, privacy-first (local storage), and **XcodeGen**-driven for easy project generation.
 
