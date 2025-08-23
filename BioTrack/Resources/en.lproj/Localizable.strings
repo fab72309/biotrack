@@ -1,0 +1,10 @@
+"tab.checklist" = "Checklist";
+"tab.track" = "Track";
+"tab.stats" = "Stats";
+"tab.protocols" = "Protocols";
+"tab.supplements" = "Supplements";
+"action.add" = "Add";
+"empty.state" = "Nothing here yet.";
+"checklist.completed" = "Completed";
+"permissions.health.read" = "Allow Health access to prefill metrics?";
+"permissions.notifications" = "Enable reminders?";

@@ -1,0 +1,10 @@
+"tab.checklist" = "Checklist";
+"tab.track" = "Suivi";
+"tab.stats" = "Statistiques";
+"tab.protocols" = "Protocoles";
+"tab.supplements" = "Suppléments";
+"action.add" = "Ajouter";
+"empty.state" = "Rien pour le moment.";
+"checklist.completed" = "Terminé";
+"permissions.health.read" = "Autoriser l'accès Santé pour pré-remplir les métriques ?";
+"permissions.notifications" = "Activer les rappels ?";

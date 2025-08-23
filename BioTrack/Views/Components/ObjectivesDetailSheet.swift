@@ -1,0 +1,306 @@
+import SwiftUI
+
+struct ObjectivesDetailSheet: View {
+    @EnvironmentObject var state: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var pageIndex: Int = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(titleForPage(pageIndex))
+                    .font(.headline)
+                Spacer()
+                Button("Fermer") { dismiss() }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+
+            ObjectivesDetailContent(pageIndex: $pageIndex)
+                .environmentObject(state)
+
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { idx in
+                    Circle()
+                        .fill(idx == pageIndex ? Color("Primary") : Color.secondary.opacity(0.4))
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .padding(.vertical, 8)
+        }
+        .withSheetDetentsIfAvailable()
+    }
+
+    private func titleForPage(_ index: Int) -> String {
+        switch index { case 0: return "Aujourd'hui"; case 1: return "7 derniers jours"; default: return "30 derniers jours" }
+    }
+
+}
+
+struct ObjectivesDetailContent: View {
+    @EnvironmentObject var state: AppState
+    @Binding var pageIndex: Int
+
+    var body: some View {
+        TabView(selection: $pageIndex) {
+            todayView.tag(0)
+            periodListView(days: 7).tag(1)
+            periodListView(days: 30).tag(2)
+        }
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+    }
+
+    private var todayView: some View {
+        let completedProtocols = state.protocols.filter { isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let completedSupps = state.supplements.filter { isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let remainingProtocols = state.protocols.filter { !isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let remainingSupps = state.supplements.filter { !isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                if remainingProtocols.isEmpty && remainingSupps.isEmpty {
+                    Text("Aucun objectif restant aujourd'hui").foregroundStyle(.secondary).padding(.horizontal, 16)
+                }
+                if !remainingProtocols.isEmpty {
+                    Text("Protocoles").font(.subheadline.weight(.semibold)).padding(.horizontal, 16)
+                    ForEach(remainingProtocols) { p in
+                        interactiveCompactRow(title: p.name, isDone: false) {
+                            toggleProtocol(p)
+                        }
+                    }
+                }
+                if !remainingSupps.isEmpty {
+                    Text("Compléments").font(.subheadline.weight(.semibold)).padding(.horizontal, 16).padding(.top, 8)
+                    ForEach(remainingSupps) { s in
+                        interactiveCompactRow(title: s.name, isDone: false) {
+                            toggleSupplement(s)
+                        }
+                    }
+                }
+                // Complétés en bas
+                if !completedProtocols.isEmpty || !completedSupps.isEmpty {
+                    Text("Complétés").font(.subheadline.weight(.semibold)).padding(.horizontal, 16).padding(.top, 8)
+                    ForEach(completedProtocols) { p in
+                        interactiveCompactRow(title: p.name, isDone: true) { toggleProtocol(p) }
+                    }
+                    ForEach(completedSupps) { s in
+                        interactiveCompactRow(title: s.name, isDone: true) { toggleSupplement(s) }
+                    }
+                }
+            }
+            .padding(.vertical, 12)
+        }
+    }
+
+    private func periodListView(days: Int) -> some View {
+        let calendar = Calendar.current
+        let dates: [Date] = (0..<days).compactMap { calendar.date(byAdding: .day, value: -$0, to: Date()) }.sorted()
+        return ScrollView {
+            VStack(spacing: 8) {
+                ForEach(dates, id: \.self) { d in
+                    let total = objectivesTotal()
+                    let done = objectivesDone(on: d)
+                    let percent = total == 0 ? 0.0 : Double(done) / Double(total)
+                    HStack(spacing: 10) {
+                        Text(dateLabel(d))
+                            .font(.subheadline)
+                        Spacer()
+                        Text(String(format: "%.0f%%", percent * 100))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(done)/\(total)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
+                }
+            }
+            .padding(.vertical, 12)
+        }
+    }
+
+    private func dateLabel(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f.string(from: d)
+    }
+    private func objectivesTotal() -> Int { state.protocols.count + state.supplements.count }
+    private func objectivesDone(on date: Date) -> Int {
+        let protocolsDone = state.protocolCompletions.filter { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.completed }.count
+        let suppsDone = state.supplementIntakes.filter { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.taken }.count
+        return protocolsDone + suppsDone
+    }
+    private func isProtocolDone(on date: Date, item: ProtocolItem) -> Bool {
+        state.protocolCompletions.contains { $0.protocolId == item.id && Calendar.current.isDate($0.date, inSameDayAs: date) && $0.completed }
+    }
+    private func isSupplementDone(on date: Date, item: Supplement) -> Bool {
+        state.supplementIntakes.contains { $0.supplementId == item.id && Calendar.current.isDate($0.date, inSameDayAs: date) && $0.taken }
+    }
+
+    // Toggle helpers (compact interaction in popup)
+    private func toggleProtocol(_ item: ProtocolItem) {
+        if let idx = state.protocolCompletions.firstIndex(where: { $0.protocolId == item.id && Calendar.current.isDateInToday($0.date) }) {
+            state.protocolCompletions.remove(at: idx)
+        } else {
+            let completion = ProtocolCompletion(protocolId: item.id, date: Date(), completed: true)
+            state.protocolCompletions.append(completion)
+        }
+        state.save()
+    }
+
+    private func toggleSupplement(_ s: Supplement) {
+        if let idx = state.supplementIntakes.firstIndex(where: { $0.supplementId == s.id && Calendar.current.isDateInToday($0.date) }) {
+            state.supplementIntakes.remove(at: idx)
+        } else {
+            let intake = SupplementIntake(supplementId: s.id, date: Date(), taken: true)
+            state.supplementIntakes.append(intake)
+        }
+        state.save()
+    }
+}
+
+// Compact rows with checkbox
+private extension ObjectivesDetailContent {
+    func interactiveCompactRow(title: String, isDone: Bool, toggle: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Button(action: toggle) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(isDone ? Color("Primary") : Color(UIColor.separator), lineWidth: 2)
+                        .background(isDone ? Color("Primary").opacity(0.15) : Color.clear)
+                        .frame(width: 22, height: 22)
+                    if isDone { Image(systemName: "checkmark").font(.caption2).foregroundColor(Color("Primary")) }
+                }
+            }
+            .buttonStyle(.plain)
+            Text(title)
+                .font(.subheadline)
+                .lineLimit(1)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
+    }
+}
+
+// Popup-style container around ObjectivesDetailContent
+struct ObjectivesDetailPopup: View {
+    @EnvironmentObject var state: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var pageIndex: Int = 0
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4).ignoresSafeArea()
+            VStack(spacing: 0) {
+                // Header avec progression circulaire et titre centré
+                VStack(spacing: 8) {
+                    ZStack {
+                        Text(titleForPage(pageIndex)).font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        HStack { Spacer(); Button(action: { dismiss() }) { Image(systemName: "xmark") } }
+                    }
+                    .padding(.horizontal, 12)
+
+                    ProgressCircle(days: daysFor(pageIndex))
+                        .environmentObject(state)
+                        .frame(height: 140)
+                        .padding(.horizontal, 16)
+                    Text("Objectifs réalisés sur la période")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 12)
+
+                ObjectivesDetailContent(pageIndex: $pageIndex)
+                    .environmentObject(state)
+                    .frame(maxHeight: 420)
+
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { idx in
+                        Circle()
+                            .fill(idx == pageIndex ? Color("Primary") : Color.secondary.opacity(0.4))
+                            .frame(width: 8, height: 8)
+                    }
+                }
+                .padding(10)
+            }
+            .frame(maxWidth: 520)
+            .background(
+                VStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(Color(UIColor.systemBackground))
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color(UIColor.separator), lineWidth: 0.5)
+            )
+            .padding(24)
+            .shadow(radius: 20)
+            .transition(.scale.combined(with: .opacity))
+        }
+    }
+
+    private func titleForPage(_ index: Int) -> String {
+        switch index { case 0: return "Aujourd'hui"; case 1: return "7 derniers jours"; default: return "30 derniers jours" }
+    }
+
+    private func daysFor(_ index: Int) -> Int {
+        switch index { case 0: return 1; case 1: return 7; default: return 30 }
+    }
+}
+
+// Circular progress header
+private struct ProgressCircle: View {
+    @EnvironmentObject var state: AppState
+    var days: Int = 1
+
+    private var total: Int {
+        let perDay = state.protocols.count + state.supplements.count
+        return max(1, perDay * max(1, days))
+    }
+    private var done: Int {
+        let calendar = Calendar.current
+        if days <= 1 {
+            let protocolIds = Set(state.protocolCompletions.filter { calendar.isDateInToday($0.date) && $0.completed }.map { $0.protocolId })
+            let supplementIds = Set(state.supplementIntakes.filter { calendar.isDateInToday($0.date) && $0.taken }.map { $0.supplementId })
+            return protocolIds.count + supplementIds.count
+        } else {
+            let dates: [Date] = (0..<days).compactMap { calendar.date(byAdding: .day, value: -$0, to: Date()) }
+            var totalDone = 0
+            for d in dates {
+                let p = Set(state.protocolCompletions.filter { calendar.isDate($0.date, inSameDayAs: d) && $0.completed }.map { $0.protocolId }).count
+                let s = Set(state.supplementIntakes.filter { calendar.isDate($0.date, inSameDayAs: d) && $0.taken }.map { $0.supplementId }).count
+                totalDone += (p + s)
+            }
+            return totalDone
+        }
+    }
+    private var progress: Double { total == 0 ? 0 : Double(done) / Double(total) }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color(UIColor.secondarySystemFill), lineWidth: 14)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(LinearGradient(colors: [Color("Primary"), Color("Primary").opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 0.3), value: progress)
+            VStack(spacing: 4) {
+                Text(String(format: "%.0f%%", progress * 100))
+                    .font(.title3.weight(.bold))
+                Text("\(done)/\(total)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+    }
+}

@@ -1,0 +1,59 @@
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# macOS
+.DS_Store
+
+# Backup Xcode projects
+*.xcodeproj.bak.*
+
+# Xcode
+DerivedData/
+build/
+*.xcworkspace/
+*.xcuserdatad/
+*.xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+# Swift Package Manager
+.swiftpm/
+.build/
+# CocoaPods
+Pods/
+# Carthage
+Carthage/
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+# Misc
+.DS_Store
+*.swp
+*.zip

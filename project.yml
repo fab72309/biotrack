@@ -1,0 +1,45 @@
+name: BioTrack
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  BioTrack:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: BioTrack
+        excludes:
+          - PrivacyPolicy.md
+    info:
+      path: BioTrack/Info.plist
+      properties:
+        CFBundleDisplayName: BioTrack
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        UIUserInterfaceStyle: Automatic
+        NSHealthShareUsageDescription: "BioTrack lit vos données Santé (par ex. sommeil) pour pré-remplir vos métriques."
+        NSHealthUpdateUsageDescription: "BioTrack écrit des données (par ex. pleine conscience) vers Santé si vous l'autorisez."
+    entitlements:
+      path: BioTrack/BioTrack.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.biotrack
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+schemes:
+  BioTrack:
+    build:
+      targets:
+        BioTrack: all
+    run:
+      config: Debug
