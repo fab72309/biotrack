@@ -172,6 +172,8 @@ struct SupplementLibrarySheet: View {
 
     @State private var searchText: String = ""
     @State private var selectedCategory: LibraryCategory? = nil
+    @State private var showingCustomReminderSheet = false
+    @State private var customReminderInitialData: ReminderSheet.ReminderData? = nil
 
     var body: some View {
         VStack(spacing: 10) {
@@ -180,9 +182,12 @@ struct SupplementLibrarySheet: View {
             ScrollView {
                 LazyVStack(spacing: 10) {
                     ForEach(filteredLibrary) { item in
-                        LibraryCard(item: item, isAdded: isAdded(item)) {
-                            addToUser(item)
-                        }
+                        LibraryCard(
+                            item: item,
+                            isAdded: isAdded(item),
+                            onAdd: { _ = addToUser(item) },
+                            onAddWithReminder: { addFromLibraryWithCustomReminder(item) }
+                        )
                     }
                 }
                 .padding(.horizontal, 12)
@@ -197,6 +202,13 @@ struct SupplementLibrarySheet: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
+        }
+        .sheet(isPresented: $showingCustomReminderSheet) {
+            ReminderSheet(initialData: customReminderInitialData) { data in
+                saveCustomReminder(data)
+                customReminderInitialData = nil
+            }
+            .withSheetDetentsIfAvailable()
         }
     }
 
@@ -274,8 +286,9 @@ struct SupplementLibrarySheet: View {
         state.supplements.contains { $0.name.localizedCaseInsensitiveCompare(item.name) == .orderedSame }
     }
 
-    private func addToUser(_ item: LibrarySupplement) {
-        guard !isAdded(item) else { return }
+    @discardableResult
+    private func addToUser(_ item: LibrarySupplement) -> Supplement? {
+        guard !isAdded(item) else { return nil }
         // Map library item to app's Supplement model
         let categoryTitle: String = item.categories.first?.rawValue ?? "Autre"
         let benefitsText = item.benefits.joined(separator: " • ")
@@ -297,6 +310,41 @@ struct SupplementLibrarySheet: View {
         )
         state.supplements.append(newSup)
         state.save()
+        return newSup
+    }
+
+    private func addFromLibraryWithCustomReminder(_ item: LibrarySupplement) {
+        guard let supplement = addToUser(item) else { return }
+        customReminderInitialData = defaultReminderData(for: supplement.name)
+        showingCustomReminderSheet = true
+    }
+
+    private func defaultReminderData(for name: String) -> ReminderSheet.ReminderData {
+        let defaultTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+        return ReminderSheet.ReminderData(
+            title: "Prendre \(name)",
+            time: defaultTime,
+            days: Set(1...7),
+            description: "",
+            notificationsEnabled: true
+        )
+    }
+
+    private func saveCustomReminder(_ data: ReminderSheet.ReminderData) {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: data.time)
+        let reminder = Reminder(
+            title: data.title,
+            hour: comps.hour ?? 8,
+            minute: comps.minute ?? 0,
+            weekdays: Array(data.days).sorted(),
+            notes: data.description,
+            enabled: data.notificationsEnabled
+        )
+        state.reminders.append(reminder)
+        state.save()
+        if reminder.enabled {
+            NotificationService.shared.scheduleReminder(reminder)
+        }
     }
 }
 
@@ -306,6 +354,7 @@ private struct LibraryCard: View {
     let item: LibrarySupplement
     let isAdded: Bool
     let onAdd: () -> Void
+    let onAddWithReminder: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -348,9 +397,15 @@ private struct LibraryCard: View {
                         .font(.caption)
                         .foregroundColor(.green)
                 } else {
-                    Button(action: onAdd) {
-                        Label("Ajouter", systemImage: "plus")
-                            .font(.caption)
+                    HStack(spacing: 8) {
+                        Button(action: onAdd) {
+                            Label("Ajouter", systemImage: "plus")
+                                .font(.caption)
+                        }
+                        Button(action: onAddWithReminder) {
+                            Label("Ajouter + rappel", systemImage: "bell.badge")
+                                .font(.caption)
+                        }
                     }
                 }
             }
@@ -369,5 +424,4 @@ private struct LibraryCard: View {
         }
     }
 }
-
 

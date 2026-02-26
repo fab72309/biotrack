@@ -18,6 +18,7 @@ struct StatsView: View {
     @State private var grouping: Grouping = .metrics
     enum ChartStyle { case line, bar }
     @State private var chartStyle: ChartStyle = .line
+    @State private var showingExperimentWizard = false
     
     var body: some View {
         NavigationView {
@@ -27,15 +28,33 @@ struct StatsView: View {
                     selectMetricCard
                     timeAndFilters
                     mainPanel
+                    correlationsPanel
+                    experimentsPanel
                 }
                 .padding()
             }
             .navigationTitle("Statistiques")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showingExperimentWizard = true }) {
+                        Label("N-of-1", systemImage: "flask")
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showTrackSheet) { TrackView().environmentObject(state).withSheetDetentsIfAvailable() }
+        .sheet(isPresented: $showingExperimentWizard) {
+            NOf1WizardSheet(metrics: state.metrics) { input in
+                state.createExperiment(input: input)
+            }
+            .withSheetDetentsIfAvailable()
+        }
         .onAppear {
-            if selectedMetric == nil { selectedMetric = metricsWithData().first }
+            if selectedMetric == nil {
+                selectedMetric = metricsForSelection().first(where: { hasData(for: $0) }) ?? metricsForSelection().first
+            }
             if selectedMetricIds.isEmpty, let first = selectedMetric { selectedMetricIds = [first.id] }
+            state.refreshInsightsAndRecommendations()
         }
     }
 
@@ -56,9 +75,9 @@ struct StatsView: View {
     private var selectMetricCard: some View {
         SurfaceCard {
             Text("Sélectionner une métrique").font(.headline)
-            if metricsWithData().isEmpty {
+            if metricsForSelection().isEmpty {
                 VStack(spacing: 12) {
-                    Text("Aucune métrique avec des données").foregroundColor(.secondary)
+                    Text("Aucune métrique disponible").foregroundColor(.secondary)
                     Button(action: { showTrackSheet = true }) { Label("Ajouter des données", systemImage: "plus") }
                         .buttonStyle(.borderedProminent).tint(Color("Primary"))
                 }
@@ -67,10 +86,11 @@ struct StatsView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(metricsWithData()) { m in
+                        ForEach(metricsForSelection()) { m in
                             let isSelected = selectedMetricIds.contains(m.id)
+                            let label = hasData(for: m) ? m.name : "\(m.name) · vide"
                             SelectableChip(
-                                title: m.name,
+                                title: label,
                                 selected: isSelected,
                                 iconSystemName: nil,
                                 tintColor: nil,
@@ -86,6 +106,9 @@ struct StatsView: View {
                         }
                     }
                 }
+                Text("Les métriques marquées “vide” n'ont pas encore de donnée enregistrée.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -146,18 +169,23 @@ struct StatsView: View {
                         // Use type defined in separate file; ensure symbol is visible by having same module
                         let metricsList = metricsListForDisplay(baseMetric: m)
                         let primaryMetric = metricsList.first ?? m
-                        let series = buildSeries(from: metricsList)
+                        let isNormalizedComparison = shouldNormalizeMetricsComparison(metricsList: metricsList)
+                        let series = buildSeries(from: metricsList, normalizeMetrics: isNormalizedComparison)
+                        let forcedRange = isNormalizedComparison
+                        ? (0.0 as Double?, 100.0 as Double?)
+                        : forcedYRange(for: primaryMetric, series: series)
                         VStack(spacing: 8) {
                             // Légende au-dessus du graphique
                             legendRow(series: series)
                             MultiSeriesChart(series: series,
                                          style: chartStyle,
-                                         unit: unitLabel(baseMetric: primaryMetric),
+                                         unit: isNormalizedComparison ? "Indice (0-100)" : unitLabel(baseMetric: primaryMetric),
+                                         yAxisMode: yAxisMode(for: primaryMetric, isNormalizedComparison: isNormalizedComparison),
                                          ticks: customTicks(),
-                                         yMinForced: forcedYRange(for: primaryMetric, series: series).0,
-                                         yMaxForced: forcedYRange(for: primaryMetric, series: series).1,
-                                         valueFormatter: valueFormatterForMetric(primaryMetric),
-                                         avgLineValue: averageValue(for: primaryMetric, series: series),
+                                         yMinForced: forcedRange.0,
+                                         yMaxForced: forcedRange.1,
+                                         valueFormatter: isNormalizedComparison ? nil : valueFormatterForMetric(primaryMetric),
+                                         avgLineValue: isNormalizedComparison ? nil : averageValue(for: primaryMetric, series: series),
                                          showLegend: false)
                             .frame(height: 300)
                             .padding(.vertical, 6)
@@ -175,14 +203,101 @@ struct StatsView: View {
                     }
                 } else {
                     let (start, end) = dateBounds()
-                    CalendarHeatmap(entries: filteredEntries(for: m), startDate: start, endDate: end)
-                        .frame(height: 320)
-                        .padding()
+                    VStack(alignment: .leading, spacing: 12) {
+                        SurfaceCard {
+                            UnifiedCalendarView(days: rangeDays)
+                                .environmentObject(state)
+                        }
+                        SurfaceCard {
+                            Text("Heatmap métrique").font(.headline)
+                            CalendarHeatmap(entries: filteredEntries(for: m), startDate: start, endDate: end)
+                                .frame(height: 300)
+                        }
+                    }
                 }
             } else {
                 SurfaceCard {
                     EmptyStateView(text: "Choisissez une métrique pour afficher les données", systemImageName: "chart.bar")
                         .frame(maxWidth: .infinity, minHeight: 180)
+                }
+            }
+        }
+    }
+
+    private var correlationsPanel: some View {
+        SurfaceCard {
+            HStack {
+                Text("Corrélations locales").font(.headline)
+                Spacer()
+                Button("Rafraîchir") { state.refreshInsightsAndRecommendations() }
+                    .buttonStyle(.bordered)
+            }
+            if state.correlationInsights.isEmpty {
+                Text("Pas assez de données pour calculer des corrélations fiables.")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            } else {
+                ForEach(Array(state.correlationInsights.prefix(4))) { insight in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(metricName(for: insight.metricAId) + " ↔ " + metricName(for: insight.metricBId))
+                            .font(.subheadline.weight(.semibold))
+                        Text(insight.summary)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "r=%.2f • n=%d • lag=%dj", insight.pearson, insight.sampleSize, insight.lagDays))
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private var experimentsPanel: some View {
+        SurfaceCard {
+            HStack {
+                Text("Expériences N-of-1").font(.headline)
+                Spacer()
+                Button("Nouveau") { showingExperimentWizard = true }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color("Primary"))
+            }
+            if state.experiments.isEmpty {
+                Text("Aucune expérience en cours.")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(state.experiments) { experiment in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(experiment.title).font(.subheadline.weight(.semibold))
+                        Text(experiment.hypothesis).font(.caption).foregroundColor(.secondary)
+                        HStack {
+                            Button("Log aujourd'hui") {
+                                logObservationToday(for: experiment)
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                            Spacer()
+                            Text(experiment.status.rawValue.capitalized)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        if let summary = state.experimentSummary(experimentId: experiment.id),
+                           let control = summary.controlAverage,
+                           let intervention = summary.interventionAverage {
+                            Text(String(format: "%@: %.2f • %@: %.2f • Δ %.2f",
+                                        experiment.controlLabel, control,
+                                        experiment.interventionLabel, intervention,
+                                        summary.delta ?? 0))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("En attente de mesures.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
         }
@@ -205,7 +320,7 @@ struct StatsView: View {
                     }.font(.subheadline.weight(.semibold))
                 }
             case .protocols, .supplements:
-                let all = series.flatMap { $0.points.map { $0.1 } }
+                let all = series.flatMap { $0.points.map(\.displayValue) }
                 let avg = (all.reduce(0, +) / max(Double(all.count), 1))
                 Text(String(format: "%.1f / jour", avg)).font(.subheadline.weight(.semibold))
             }
@@ -231,7 +346,7 @@ struct StatsView: View {
             guard !vals.isEmpty else { return nil }
             return vals.reduce(0, +) / Double(vals.count)
         case .protocols, .supplements:
-            let all = series.flatMap { $0.points.map { $0.1 } }
+            let all = series.flatMap { $0.points.map(\.displayValue) }
             guard !all.isEmpty else { return nil }
             return all.reduce(0, +) / Double(all.count)
         }
@@ -263,6 +378,16 @@ struct StatsView: View {
     private func metricsWithData() -> [Metric] {
         let ids = Set(state.metricEntries.map { $0.metricId })
         return state.metrics.filter { ids.contains($0.id) }
+    }
+
+    private func metricsForSelection() -> [Metric] {
+        state.metrics.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    private func hasData(for metric: Metric) -> Bool {
+        state.metricEntries.contains(where: { $0.metricId == metric.id })
     }
     private func filteredEntries(for metric: Metric) -> [MetricEntry] {
         var entries = state.metricEntries.filter { $0.metricId == metric.id }
@@ -299,7 +424,53 @@ struct StatsView: View {
         }
     }
 
-    private func buildSeries(from metricsList: [Metric]) -> [ChartSeries] {
+    private func shouldNormalizeMetricsComparison(metricsList: [Metric]) -> Bool {
+        guard grouping == .metrics, metricsList.count >= 2 else { return false }
+        let compatibilityKeys = Set(metricsList.map(metricCompatibilityKey))
+        return compatibilityKeys.count > 1
+    }
+
+    private func metricCompatibilityKey(_ metric: Metric) -> String {
+        switch metric.kind {
+        case .hoursMinutes:
+            return "duration_minutes"
+        case .number:
+            return "number:\(normalizedUnit(metric.unit))"
+        }
+    }
+
+    private func normalizedUnit(_ unit: String?) -> String {
+        guard let unit else { return "" }
+        return unit
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: " ", with: "")
+            .lowercased()
+    }
+
+    private func yAxisMode(for baseMetric: Metric, isNormalizedComparison: Bool) -> MultiSeriesChart.YAxisMode {
+        guard !isNormalizedComparison else { return .numeric }
+        switch grouping {
+        case .metrics:
+            let normalizedName = baseMetric.name
+                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                .lowercased()
+            return (baseMetric.kind == .hoursMinutes || normalizedName.contains("sommeil")) ? .durationMinutes : .numeric
+        case .protocols, .supplements:
+            return .numeric
+        }
+    }
+
+    private func tooltipUnit(for metric: Metric) -> String {
+        let normalizedName = metric.name
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+        if metric.kind == .hoursMinutes || normalizedName.contains("sommeil") {
+            return ""
+        }
+        return metric.unit ?? ""
+    }
+
+    private func buildSeries(from metricsList: [Metric], normalizeMetrics: Bool) -> [ChartSeries] {
         let cal = Calendar.current
         let startDate = dateBounds().0
 
@@ -307,8 +478,31 @@ struct StatsView: View {
         case .metrics:
             let palette = colorPalette()
             return metricsList.enumerated().map { idx, m in
-                let points = filteredEntries(for: m).map { ($0.date, $0.value) }
-                return ChartSeries(name: m.name, color: palette[idx % palette.count], points: points)
+                let entries = filteredEntries(for: m)
+                let rawValues = entries.map(\.value)
+                let minRaw = rawValues.min() ?? 0
+                let maxRaw = rawValues.max() ?? 0
+                let points = entries.map { entry -> ChartPoint in
+                    let raw = entry.value
+                    let display: Double
+                    if normalizeMetrics {
+                        if abs(maxRaw - minRaw) < 1e-6 {
+                            display = 50
+                        } else {
+                            display = ((raw - minRaw) / (maxRaw - minRaw)) * 100
+                        }
+                    } else {
+                        display = raw
+                    }
+                    return ChartPoint(date: entry.date, displayValue: display, rawValue: raw)
+                }
+                return ChartSeries(
+                    name: m.name,
+                    color: palette[idx % palette.count],
+                    points: points,
+                    rawUnit: tooltipUnit(for: m),
+                    rawValueFormatter: valueFormatterForMetric(m)
+                )
             }
         case .protocols:
             // construire une série 0/1 par protocole selon complétions (uniquement quand actif à la date)
@@ -318,8 +512,11 @@ struct StatsView: View {
             return items.enumerated().map { idx, p in
                 let comps = state.protocolCompletions.filter { $0.protocolId == p.id && $0.date >= startDate && p.isActive(on: $0.date) }
                 let grouped = Dictionary(grouping: comps) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { ($0, Double(grouped[$0]?.filter { $0.completed }.count ?? 0)) }
-                return ChartSeries(name: p.name, color: palette[idx % palette.count], points: points)
+                let points = grouped.keys.sorted().map { day in
+                    let value = Double(grouped[day]?.filter { $0.completed }.count ?? 0)
+                    return ChartPoint(date: day, displayValue: value, rawValue: value)
+                }
+                return ChartSeries(name: p.name, color: palette[idx % palette.count], points: points, rawUnit: "occurrences", rawValueFormatter: nil)
             }
         case .supplements:
             let ids = Set(state.supplementIntakes.map { $0.supplementId })
@@ -328,8 +525,11 @@ struct StatsView: View {
             return items.enumerated().map { idx, s in
                 let ints = state.supplementIntakes.filter { $0.supplementId == s.id && $0.date >= startDate && s.isActive(on: $0.date) }
                 let grouped = Dictionary(grouping: ints) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { ($0, Double(grouped[$0]?.filter { $0.taken }.count ?? 0)) }
-                return ChartSeries(name: s.name, color: palette[idx % palette.count], points: points)
+                let points = grouped.keys.sorted().map { day in
+                    let value = Double(grouped[day]?.filter { $0.taken }.count ?? 0)
+                    return ChartPoint(date: day, displayValue: value, rawValue: value)
+                }
+                return ChartSeries(name: s.name, color: palette[idx % palette.count], points: points, rawUnit: "occurrences", rawValueFormatter: nil)
             }
         }
     }
@@ -344,6 +544,30 @@ struct StatsView: View {
         case .d90: return (cal.date(byAdding: .day, value: -90, to: end)!, end)
         case .all: return (Date.distantPast, end)
         }
+    }
+
+    private var rangeDays: Int {
+        switch range {
+        case .d7: return 7
+        case .d30: return 30
+        case .d90: return 90
+        case .all: return 120
+        }
+    }
+
+    private func metricName(for id: UUID) -> String {
+        state.metrics.first(where: { $0.id == id })?.name ?? "—"
+    }
+
+    private func logObservationToday(for experiment: NOf1Experiment) {
+        let todayEntries = state.metricEntries
+            .filter { $0.metricId == experiment.targetMetricId && Calendar.current.isDateInToday($0.date) }
+            .sorted { $0.date > $1.date }
+        let fallbackEntries = state.metricEntries
+            .filter { $0.metricId == experiment.targetMetricId }
+            .sorted { $0.date > $1.date }
+        let value = todayEntries.first?.value ?? fallbackEntries.first?.value ?? 0
+        state.recordObservation(experimentId: experiment.id, value: value, date: Date(), notes: nil)
     }
 
     private func customTicks() -> [Date]? {
@@ -367,7 +591,7 @@ struct StatsView: View {
         let name = m.name.lowercased()
         // Heures/minutes (ex: sommeil): bornes alignées sur des multiples de 30 minutes
         if m.kind == .hoursMinutes || name.contains("sommeil") {
-            let values = series.flatMap { $0.points.map { max(0, $0.1) } }
+            let values = series.flatMap { $0.points.map { max(0, $0.displayValue) } }
             guard let minVal0 = values.min(), let maxVal0 = values.max() else { return (0, 16*60) }
             let step: Double = 30
             var yMin = floor(minVal0 / step) * step
@@ -411,6 +635,9 @@ struct StatsView: View {
             }
         }
         if name.contains("poids") {
+            return { v in String(format: "%.1f", v) }
+        }
+        if m.unit == "ms" {
             return { v in String(format: "%.1f", v) }
         }
         return { v in String(format: "%.0f", v) }

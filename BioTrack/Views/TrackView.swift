@@ -2,6 +2,9 @@ import SwiftUI
 
 struct TrackView: View {
     @EnvironmentObject var state: AppState
+    @AppStorage("collapseTrackMetricCard") private var collapseTrackMetricCard: Bool = false
+    @AppStorage("collapseTrackEntryCard") private var collapseTrackEntryCard: Bool = false
+    @AppStorage("collapseTrackRecentEntriesCard") private var collapseTrackRecentEntriesCard: Bool = false
     @State private var selectedMetric: Metric?
     @State private var numberValue: Double = 0
     @State private var durationMinutes: Double = 0
@@ -59,21 +62,41 @@ struct TrackView: View {
     }
 
     private var metricChips: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Sélectionner une métrique").font(.headline)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    let presets = defaultMetrics()
-                    let selectedPresetId = equivalentPresetId(for: selectedMetric, within: presets)
-                    ForEach(presets, id: \.id) { metric in
-                        SelectableChip(title: metric.name, selected: selectedPresetId == metric.id) {
-                            selectedMetric = ensureMetricExists(metric)
-                        }
+        SurfaceCard {
+            HStack {
+                Text("Sélectionner une métrique").font(.headline)
+                Spacer()
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        collapseTrackMetricCard.toggle()
                     }
-                    Button(action: { showingCreate = true }) {
-                        HStack(spacing: 6) { Image(systemName: "plus"); Text("Créer") }
-                            .padding(.vertical, 10).padding(.horizontal, 14)
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))).foregroundColor(.secondary)
+                }) {
+                    Image(systemName: collapseTrackMetricCard ? "chevron.down" : "chevron.up")
+                        .imageScale(.small)
+                }
+                .buttonStyle(TrackCircleChevronButtonStyle())
+                .accessibilityLabel(collapseTrackMetricCard ? "Déplier la carte métriques" : "Replier la carte métriques")
+            }
+
+            if collapseTrackMetricCard {
+                Text(selectedMetric?.name ?? "Aucune métrique sélectionnée")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        let presets = defaultMetrics()
+                        let selectedPresetId = equivalentPresetId(for: selectedMetric, within: presets)
+                        ForEach(presets, id: \.id) { metric in
+                            SelectableChip(title: metric.name, selected: selectedPresetId == metric.id) {
+                                selectedMetric = ensureMetricExists(metric)
+                            }
+                        }
+                        Button(action: { showingCreate = true }) {
+                            HStack(spacing: 6) { Image(systemName: "plus"); Text("Créer") }
+                                .padding(.vertical, 10).padding(.horizontal, 14)
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))).foregroundColor(.secondary)
+                        }
                     }
                 }
             }
@@ -84,19 +107,39 @@ struct TrackView: View {
 
     private var entryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(selectedMetric?.name ?? "Sélectionner une métrique")
-                .font(.title3.weight(.semibold))
-            Text(descriptionForSelected()).foregroundColor(.secondary)
-            if let metric = selectedMetric {
-                inputForMetric(metric)
-                VStack(alignment: .leading) {
-                    Text("Notes (optionnel)").font(.subheadline.weight(.semibold))
-                    TextEditor(text: $notes).frame(minHeight: 90)
+            HStack {
+                Text(selectedMetric?.name ?? "Sélectionner une métrique")
+                    .font(.title3.weight(.semibold))
+                Spacer()
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        collapseTrackEntryCard.toggle()
+                    }
+                }) {
+                    Image(systemName: collapseTrackEntryCard ? "chevron.down" : "chevron.up")
+                        .imageScale(.small)
                 }
-                Button(action: { saveEntry(); Haptics.success() }) { Label("Sauvegarder", systemImage: "externaldrive.badge.checkmark") }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color("Primary"))
-                    .frame(maxWidth: .infinity)
+                .buttonStyle(TrackCircleChevronButtonStyle())
+                .accessibilityLabel(collapseTrackEntryCard ? "Déplier la carte saisie" : "Replier la carte saisie")
+            }
+
+            if collapseTrackEntryCard {
+                Text(descriptionForSelected())
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text(descriptionForSelected()).foregroundColor(.secondary)
+                if let metric = selectedMetric {
+                    inputForMetric(metric)
+                    VStack(alignment: .leading) {
+                        Text("Notes (optionnel)").font(.subheadline.weight(.semibold))
+                        TextEditor(text: $notes).frame(minHeight: 90)
+                    }
+                    Button(action: { saveEntry(); Haptics.success() }) { Label("Sauvegarder", systemImage: "externaldrive.badge.checkmark") }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color("Primary"))
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .padding()
@@ -109,40 +152,59 @@ struct TrackView: View {
                 Text("Entrées récentes").font(.headline)
                 Spacer()
                 Button(action: { showingFilter = true }) { Image(systemName: "line.3.horizontal.decrease.circle") }
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        collapseTrackRecentEntriesCard.toggle()
+                    }
+                }) {
+                    Image(systemName: collapseTrackRecentEntriesCard ? "chevron.down" : "chevron.up")
+                        .imageScale(.small)
+                }
+                .buttonStyle(TrackCircleChevronButtonStyle())
+                .accessibilityLabel(collapseTrackRecentEntriesCard ? "Déplier les entrées récentes" : "Replier les entrées récentes")
             }
-            if filteredAllEntries().isEmpty {
-                SurfaceCard {
-                    EmptyStateView(text: "Aucune donnée enregistrée", systemImageName: "chart.bar")
-                        .frame(maxWidth: .infinity)
-                }
+            if collapseTrackRecentEntriesCard {
+                Text("\(filteredAllEntries().count) entrée(s)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             } else {
-                VStack(spacing: 8) {
-                    ForEach(filteredAllEntries().prefix(entriesToShow)) { entry in
-                        let metric = metricById(entry.metricId)
-                        SwipeableRow(onEdit: { editingEntry = entry }, onDelete: { toDeleteEntry = entry; showDeleteAlert = true }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(metric?.name ?? "—").font(.subheadline.weight(.semibold))
-                                    Text(entry.date, style: .date).font(.caption).foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                Text(formattedValue(entry, metric: metric))
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-                        Divider()
-                    }
-                    if entriesToShow < filteredAllEntries().count {
-                        Button("Afficher 10 de plus") { entriesToShow += 10 }
+                if filteredAllEntries().isEmpty {
+                    SurfaceCard {
+                        EmptyStateView(text: "Aucune donnée enregistrée", systemImageName: "chart.bar")
                             .frame(maxWidth: .infinity)
-                            .buttonStyle(.bordered)
                     }
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(filteredAllEntries().prefix(entriesToShow)) { entry in
+                            let metric = metricById(entry.metricId)
+                            SwipeableRow(onEdit: { editingEntry = entry }, onDelete: { toDeleteEntry = entry; showDeleteAlert = true }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(metric?.name ?? "—").font(.subheadline.weight(.semibold))
+                                        HStack(spacing: 8) {
+                                            Text(entry.date, style: .date).font(.caption).foregroundColor(.secondary)
+                                            sourceBadge(for: entry)
+                                        }
+                                    }
+                                    Spacer()
+                                    Text(formattedValue(entry, metric: metric))
+                                        .font(.subheadline.weight(.semibold))
+                                }
+                                .padding(.vertical, 4)
+                            }
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                            Divider()
+                        }
+                        if entriesToShow < filteredAllEntries().count {
+                            Button("Afficher 10 de plus") { entriesToShow += 10 }
+                                .frame(maxWidth: .infinity)
+                                .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding()
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(UIColor.secondarySystemBackground)))
                 }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(UIColor.secondarySystemBackground)))
             }
         }
         .sheet(isPresented: $showingFilter) { filterSheet }
@@ -201,16 +263,18 @@ struct TrackView: View {
     }
 
     private func defaultMetrics() -> [Metric] {
-        let presets: [Metric] = [
+        [
             Metric(name: "Durée du sommeil", kind: .hoursMinutes, unit: "h", description: "Heures de sommeil par nuit"),
             Metric(name: "Qualité du sommeil", kind: .number, unit: "1-10"),
             Metric(name: "Humeur", kind: .number, unit: "1-10"),
             Metric(name: "Énergie", kind: .number, unit: "1-10"),
             Metric(name: "Concentration", kind: .number, unit: "1-10"),
             Metric(name: "Poids", kind: .number, unit: "kg"),
-            Metric(name: "Stress", kind: .number, unit: "1-10"),
+            Metric(name: "Pas", kind: .number, unit: "pas"),
+            Metric(name: "FC au repos", kind: .number, unit: "bpm"),
+            Metric(name: "HRV (SDNN)", kind: .number, unit: "ms"),
+            Metric(name: "Stress", kind: .number, unit: "1-10")
         ]
-        return presets
     }
 
     private func ensureMetricExists(_ m: Metric) -> Metric {
@@ -323,10 +387,52 @@ private extension TrackView {
         } else if metric.name.lowercased().contains("poids") {
             let val = entry.value // stored in kg
             return String(format: "%.1f kg", val)
+        } else if let unit = metric.unit {
+            switch unit {
+            case "pas":
+                return "\(Int(entry.value)) pas"
+            case "bpm":
+                return "\(Int(entry.value)) bpm"
+            case "ms":
+                return String(format: "%.1f ms", entry.value)
+            default:
+                return String(Int(entry.value))
+            }
         } else {
             return String(Int(entry.value))
         }
     }
+
+    @ViewBuilder
+    func sourceBadge(for entry: MetricEntry) -> some View {
+        let source = sourceInfo(for: entry)
+        Label(source.label, systemImage: source.icon)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(source.color.opacity(0.18))
+            )
+            .foregroundColor(source.color)
+    }
+
+    func sourceInfo(for entry: MetricEntry) -> (label: String, icon: String, color: Color) {
+        let rawNotes = (entry.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let notes = rawNotes.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).lowercased()
+
+        if notes.hasPrefix("checkin:") {
+            return ("Check-in", "checkmark.circle.fill", Color("Primary"))
+        }
+        if notes == "hk" || notes.contains("healthkit") || notes.contains("app sante") || notes.contains("app santé") {
+            return ("App Santé", "heart.fill", .green)
+        }
+        if notes.hasPrefix("import:") {
+            return ("Import", "square.and.arrow.down", .orange)
+        }
+        return ("Saisie manuelle", "hand.tap.fill", .secondary)
+    }
+
     func metricById(_ id: UUID) -> Metric? { state.metrics.first(where: { $0.id == id }) }
 
     func metricCategory(for metric: Metric) -> String {
@@ -382,6 +488,19 @@ private extension TrackView {
             .navigationTitle("Filtres")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Terminé") { showingFilter = false } } }
         }
+    }
+}
+
+private struct TrackCircleChevronButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(8)
+            .contentShape(Circle())
+            .background(
+                Circle()
+                    .fill(Color("Primary").opacity(configuration.isPressed ? 0.18 : 0))
+            )
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

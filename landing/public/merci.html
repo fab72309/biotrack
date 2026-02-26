@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Merci | BioTrack Waitlist</title>
+    <meta name="description" content="Merci pour votre inscription à la waitlist BioTrack. Confirmez votre email pour activer votre demande." />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <script defer src="/assets/js/merci.js"></script>
+  </head>
+  <body>
+    <main class="section">
+      <div class="container" style="max-width: 760px;">
+        <div class="waitlist-panel" style="grid-template-columns: 1fr;">
+          <div>
+            <p class="eyebrow">Inscription reçue</p>
+            <h1 style="font-size: clamp(1.8rem, 4vw, 2.8rem);">Merci, tu es presque dans la liste.</h1>
+            <p id="confirmation-status" style="margin-top: 0.75rem; color: var(--text-soft);">
+              Vérifie ton email et clique sur le lien de confirmation pour valider ton inscription.
+            </p>
+            <p id="debug-confirmation" style="margin-top: 0.75rem; font-size: 0.9rem;"></p>
+          </div>
+
+          <div style="display: grid; gap: 0.8rem;">
+            <h2 style="font-size: 1.35rem;">Aide-nous à prioriser la roadmap</h2>
+            <p style="color: var(--text-soft);">Question rapide: quel module dois-tu avoir en premier dans BioTrack ?</p>
+            <div class="hero-proof-strip" role="list" aria-label="Mini questionnaire">
+              <button class="btn btn-outline feedback-btn" type="button" data-answer="checklist">Checklist quotidienne</button>
+              <button class="btn btn-outline feedback-btn" type="button" data-answer="stats">Statistiques avancées</button>
+              <button class="btn btn-outline feedback-btn" type="button" data-answer="protocoles">Protocoles + suppléments</button>
+            </div>
+            <p id="feedback-status" style="min-height: 1.2rem; font-size: 0.9rem; color: var(--text-soft);"></p>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 0.65rem;">
+            <button class="btn btn-primary" id="share-button" type="button">Partager BioTrack</button>
+            <a class="btn btn-ghost" href="/">Retour à la landing</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

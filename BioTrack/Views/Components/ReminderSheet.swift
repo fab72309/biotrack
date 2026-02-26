@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReminderSheet: View {
     @Environment(\.dismiss) private var dismiss
+    let initialData: ReminderData?
     let onSave: (ReminderData) -> Void
 
     struct ReminderData {
@@ -17,6 +18,12 @@ struct ReminderSheet: View {
     @State private var days: Set<Int> = [2,3,4,5,6] // Mon..Fri
     @State private var descriptionText: String = ""
     @State private var notificationsEnabled: Bool = true
+    @State private var didApplyInitialData: Bool = false
+
+    init(initialData: ReminderData? = nil, onSave: @escaping (ReminderData) -> Void) {
+        self.initialData = initialData
+        self.onSave = onSave
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,6 +49,16 @@ struct ReminderSheet: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            guard !didApplyInitialData else { return }
+            didApplyInitialData = true
+            guard let initialData else { return }
+            title = initialData.title
+            time = initialData.time
+            days = initialData.days
+            descriptionText = initialData.description
+            notificationsEnabled = initialData.notificationsEnabled
         }
     }
 
@@ -103,13 +120,26 @@ private struct NotificationWarningView: View {
                     Text("Les notifications ne sont pas activées pour BioTrack.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                    Button("Activer dans Réglages") { NotificationService.shared.openSettings() }
+                    Button(status == .notDetermined ? "Autoriser les notifications" : "Activer dans Réglages") {
+                        if status == .notDetermined {
+                            Task {
+                                _ = await NotificationService.shared.requestPermission()
+                                refreshStatus()
+                            }
+                        } else {
+                            NotificationService.shared.openSettings()
+                        }
+                    }
                         .font(.footnote)
                 }
             }
         }
-        .onAppear { NotificationService.shared.getAuthorizationStatus { status = $0 } }
+        .onAppear { refreshStatus() }
+    }
+
+    private func refreshStatus() {
+        NotificationService.shared.getAuthorizationStatus { current in
+            status = current
+        }
     }
 }
-
-

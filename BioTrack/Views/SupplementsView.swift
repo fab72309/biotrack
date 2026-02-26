@@ -60,7 +60,11 @@ struct SupplementsView: View {
 						ForEach(groupedAndFiltered().keys.sorted(), id: \.self) { cat in
 							Section(header: sectionHeader(for: cat)) {
 								ForEach(groupedAndFiltered()[cat] ?? []) { s in
-									SwipeableRow(onEdit: { editingSupplement = s }, onDelete: { toDeleteSupplement = s; showDeleteAlert = true }) {
+									SwipeableRow(
+										onEdit: { editingSupplement = s },
+										onDelete: { toDeleteSupplement = s; showDeleteAlert = true },
+										onTap: { editingSupplement = s }
+									) {
 										HStack(alignment: .top) {
 											VStack(alignment: .leading, spacing: 2) {
 												Text(s.name).font(.headline)
@@ -115,16 +119,39 @@ struct SupplementsView: View {
 				.withSheetDetentsIfAvailable()
 			}
 			.sheet(isPresented: $showingAdd) {
-				AddSupplementForm { newSupplement in
+				AddSupplementForm { newSupplement, customReminder in
 					state.supplements.append(newSupplement)
 					state.save()
+					if let customReminder {
+						saveCustomReminder(customReminder)
+					}
 				}
 				.withSheetDetentsIfAvailable()
 			}
 			.sheet(item: $editingSupplement) { sup in
-				AddSupplementForm(existing: sup) { updated in
+				AddSupplementForm(existing: sup) { updated, _ in
 					if let idx = state.supplements.firstIndex(where: { $0.id == sup.id }) {
-						state.supplements[idx] = updated
+						var targetIndex = idx
+						var current = state.supplements[targetIndex]
+						if updated.active != current.active {
+							state.toggleSupplementActivation(sup.id)
+							if let refreshedIdx = state.supplements.firstIndex(where: { $0.id == sup.id }) {
+								targetIndex = refreshedIdx
+								current = state.supplements[targetIndex]
+							}
+						}
+						current.name = updated.name
+						current.brand = updated.brand
+						current.dose = updated.dose
+						current.category = updated.category
+						current.timeOfDay = updated.timeOfDay
+						current.timeContext = updated.timeContext
+						current.frequency = updated.frequency
+						current.timesPerDay = updated.timesPerDay
+						current.daysOfWeek = updated.daysOfWeek
+						current.durationNote = updated.durationNote
+						current.notes = updated.notes
+						state.supplements[targetIndex] = current
 						state.save()
 					}
 				}
@@ -191,6 +218,23 @@ extension SupplementsView {
 	}
 
 	private func resetFilters() { activeOnly = false; categoryFilters.removeAll() }
+
+	private func saveCustomReminder(_ data: ReminderSheet.ReminderData) {
+		let comps = Calendar.current.dateComponents([.hour, .minute], from: data.time)
+		let reminder = Reminder(
+			title: data.title,
+			hour: comps.hour ?? 8,
+			minute: comps.minute ?? 0,
+			weekdays: Array(data.days).sorted(),
+			notes: data.description,
+			enabled: data.notificationsEnabled
+		)
+		state.reminders.append(reminder)
+		state.save()
+		if reminder.enabled {
+			NotificationService.shared.scheduleReminder(reminder)
+		}
+	}
 }
 
 private func categoryIconName(for category: String) -> String {

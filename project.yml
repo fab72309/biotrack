@@ -1,6 +1,6 @@
 name: BioTrack
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.fabienlopes
   deploymentTarget:
     iOS: "15.0"
 settings:
@@ -20,26 +20,74 @@ targets:
       path: BioTrack/Info.plist
       properties:
         CFBundleDisplayName: BioTrack
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: LaunchBackground
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
         UIUserInterfaceStyle: Automatic
-        NSHealthShareUsageDescription: "BioTrack lit vos données Santé (par ex. sommeil) pour pré-remplir vos métriques."
-        NSHealthUpdateUsageDescription: "BioTrack écrit des données (par ex. pleine conscience) vers Santé si vous l'autorisez."
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        NSHealthShareUsageDescription: "BioTrack lit vos données Santé (sommeil, pas, poids, fréquence cardiaque au repos, HRV) pour pré-remplir vos métriques."
+        NSHealthUpdateUsageDescription: "BioTrack peut écrire certaines métriques de suivi dans Santé quand vous activez l'export."
+        CFBundleURLTypes:
+          - CFBundleURLName: com.fabienlopes.biotrack
+            CFBundleURLSchemes:
+              - biotrack
     entitlements:
       path: BioTrack/BioTrack.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.security.application-groups:
+          - group.com.fabienlopes.biotrack
+    dependencies:
+      - target: BioTrackWidgetExtension
+        embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.biotrack
+        PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
-        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  BioTrackWidgetExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: BioTrackWidgetExtension
+      - path: BioTrack/Models
+      - path: BioTrack/Shared
+    info:
+      path: BioTrackWidgetExtension/Info.plist
+      properties:
+        CFBundleDisplayName: BioTrack Widget
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionAttributes:
+            WKAppBundleIdentifier: com.fabienlopes.biotrack
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: BioTrackWidgetExtension/BioTrackWidgetExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.fabienlopes.biotrack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack.widget
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: AppIntents.framework
+      - sdk: ActivityKit.framework
 schemes:
   BioTrack:
     build:
       targets:
         BioTrack: all
+        BioTrackWidgetExtension: all
     run:
       config: Debug

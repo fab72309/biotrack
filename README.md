@@ -58,6 +58,17 @@ BioTrack-MVP/
 
 A lightweight GitHub Actions workflow (`ios-ci.yml`) builds the app on macOS with XcodeGen.
 
+## Landing page (marketing)
+
+This repo also includes a standalone landing + waitlist server in `landing/`.
+
+```bash
+cd landing
+npm run dev
+```
+
+The landing includes SEO/AEO metadata, legal pages, waitlist form (`POST /api/leads`), double opt-in confirmation, and analytics events (`POST /api/events`).
+
 ## Privacy
 
 All data remain **on device**. Health data access (if enabled) requires explicit user permission. See `PrivacyPolicy.md` (simplified) and Info.plist usage descriptions.

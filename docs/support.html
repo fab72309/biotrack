@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioTrack - Support</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #17202a;
+      --muted: #5f6b77;
+      --line: #dce3ea;
+      --accent: #0b5cad;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top right, #e9f2ff 0%, var(--bg) 45%);
+    }
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 22px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.04);
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin-top: 24px; font-size: 18px; }
+    p, li { line-height: 1.55; }
+    .muted { color: var(--muted); }
+    .callout {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #f2d4a7;
+      background: #fff7eb;
+      color: #7a4e10;
+    }
+    code {
+      background: #f3f6f9;
+      border: 1px solid #e1e7ee;
+      padding: 1px 5px;
+      border-radius: 6px;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Support BioTrack</h1>
+      <p class="muted">Page de support pour TestFlight et App Store. A completer avant soumission.</p>
+
+      <h2>Contact</h2>
+      <p>Remplacez ce bloc par vos informations de contact de support:</p>
+      <ul>
+        <li>Email support: <code>a-remplacer@exemple.com</code></li>
+        <li>Site / formulaire: <code>https://votre-site.com/support</code></li>
+        <li>Delai de reponse cible (ex. 48h)</li>
+      </ul>
+
+      <div class="callout">
+        App Store Connect requiert une URL de support fonctionnelle. Ne publiez pas cette page avec des placeholders.
+      </div>
+
+      <h2>FAQ rapide</h2>
+      <ul>
+        <li><strong>Les donnees sont-elles envoyees sur un serveur ?</strong> Non, les donnees sont stockees localement sur l'appareil (hors export manuel initie par l'utilisateur).</li>
+        <li><strong>Pourquoi l'app demande l'acces a Sante ?</strong> Pour importer des donnees (ex. sommeil, pas, poids, FC repos, HRV) selon les permissions accordees.</li>
+        <li><strong>Puis-je utiliser l'app sans Sante ?</strong> Oui, l'application reste utilisable sans HealthKit.</li>
+        <li><strong>Comment sauvegarder mes donnees ?</strong> Utilisez les options Export/Import depuis Parametres.</li>
+      </ul>
+
+      <h2>Compatibilite</h2>
+      <p>BioTrack cible iOS. Verifiez la version minimum supportee dans la fiche App Store avant publication.</p>
+
+      <h2>Confidentialite</h2>
+      <p>Consultez la <a href="./privacy-policy.html">politique de confidentialite</a>.</p>
+    </section>
+  </main>
+</body>
+</html>

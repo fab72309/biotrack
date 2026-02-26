@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BioTrack: app biohacking, routines et performance</title>
+    <meta
+      name="description"
+      content="BioTrack est une app iOS biohacking pour suivre routines, sommeil, métriques et suppléments, avec données locales et confidentialité native."
+    />
+    <meta name="keywords" content="app biohacking, suivi sommeil, suivi habitudes, protocole performance, tracking suppléments, santé privée" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://biotrack.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="BioTrack" />
+    <meta property="og:title" content="BioTrack: app biohacking, routines et performance" />
+    <meta
+      property="og:description"
+      content="Pilote tes routines biohacking sans compromettre ta vie privée. Waitlist ouverte pour les premiers testeurs iOS."
+    />
+    <meta property="og:url" content="https://biotrack.app/" />
+    <meta property="og:image" content="https://biotrack.app/assets/images/og-biohacking.svg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BioTrack: app biohacking, routines et performance" />
+    <meta
+      name="twitter:description"
+      content="Suivi routines, sommeil et suppléments dans une app iOS privacy-first."
+    />
+    <meta name="twitter:image" content="https://biotrack.app/assets/images/og-biohacking.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <script defer src="/assets/js/main.js"></script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "BioTrack",
+        "url": "https://biotrack.app",
+        "description": "Application iOS de suivi biohacking orientée routines, métriques et confidentialité.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "hello@biotrack.app"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "BioTrack",
+        "url": "https://biotrack.app",
+        "inLanguage": "fr",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://biotrack.app/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "BioTrack",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "iOS",
+        "inLanguage": "fr",
+        "description": "App biohacking iOS pour piloter routines, protocoles, suppléments et métriques de performance.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR",
+          "availability": "https://schema.org/PreOrder"
+        },
+        "featureList": [
+          "Checklist quotidienne",
+          "Suivi des métriques et statistiques",
+          "Protocoles et suppléments",
+          "Données stockées localement",
+          "Import HealthKit optionnel"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "BioTrack est-il une app biohacking ou une app de fitness classique ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "BioTrack est une app biohacking orientée routines de performance, sommeil, concentration, protocoles et suppléments."}
+          },
+          {
+            "@type": "Question",
+            "name": "Mes données de santé sont-elles envoyées sur un serveur ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Non. BioTrack stocke les données sur votre appareil. Les informations santé ne sont pas revendues ni partagées par défaut."}
+          },
+          {
+            "@type": "Question",
+            "name": "L'app fonctionne-t-elle avec HealthKit ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui, l'import HealthKit est optionnel. L'utilisateur garde le contrôle des autorisations iOS."}
+          },
+          {
+            "@type": "Question",
+            "name": "Pourquoi rejoindre la waitlist BioTrack ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "La waitlist donne accès aux mises à jour du lancement iOS et à une sélection prioritaire pour la bêta."}
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="site-header" id="top">
+      <div class="container header-inner">
+        <a href="#top" class="logo" aria-label="BioTrack">
+          <span class="logo-dot" aria-hidden="true"></span>
+          BioTrack
+        </a>
+        <nav class="main-nav" aria-label="Navigation principale">
+          <a href="#pourquoi">Pourquoi</a>
+          <a href="#comment">Comment</a>
+          <a href="#preuves">Preuves</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <a href="#waitlist" class="btn btn-outline cta-button" data-cta-location="header">Rejoindre la waitlist</a>
+      </div>
+    </header>
+
+    <main id="contenu">
+      <section class="aeo-summary section-tight reveal" aria-labelledby="resume-rapide-title">
+        <div class="container summary-grid">
+          <div>
+            <p class="eyebrow">Résumé rapide</p>
+            <h2 id="resume-rapide-title">BioTrack en 15 secondes</h2>
+            <p>
+              BioTrack est une app iOS de biohacking qui centralise routines quotidiennes,
+              suivi des métriques, protocoles et suppléments. L'approche est privacy-first:
+              données locales, pas de tracking santé côté serveur.
+            </p>
+          </div>
+          <ul class="key-facts" aria-label="Faits clés BioTrack">
+            <li>Application iOS orientée performance physique et mentale.</li>
+            <li>Checklist, métriques, statistiques, protocoles, suppléments.</li>
+            <li>Import HealthKit optionnel, autorisations contrôlées par l'utilisateur.</li>
+            <li>Waitlist qualifiée avec double opt-in email.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="hero section reveal" aria-labelledby="hero-title">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">App biohacking • iOS • privacy-first</p>
+            <h1 id="hero-title">Pilote tes routines biohacking sans compromettre ta vie privée.</h1>
+            <p class="hero-subtitle">
+              Transforme tes données en décisions: sommeil, énergie, concentration,
+              protocoles et suppléments dans un seul cockpit de performance.
+            </p>
+            <div class="hero-proof-strip" role="list" aria-label="Preuves rapides">
+              <span role="listitem">Données locales</span>
+              <span role="listitem">HealthKit optionnel</span>
+              <span role="listitem">Export CSV</span>
+            </div>
+            <div class="hero-actions">
+              <a href="#waitlist" class="btn btn-primary cta-button" data-cta-location="hero">Accéder à la waitlist</a>
+              <a href="#preuves" class="btn btn-ghost">Voir les preuves produit</a>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <img
+              src="/assets/images/hero-biohacking.svg"
+              alt="Visuel biohacking sportif avec surcouches biométriques"
+              class="hero-image"
+              width="720"
+              height="420"
+            />
+            <form class="lead-form form-card" data-form-location="hero" novalidate>
+              <h2>Inscription prioritaire</h2>
+              <p>Rejoins les premiers utilisateurs BioTrack et valide ton intérêt.</p>
+              <div class="form-grid">
+                <label>
+                  Prénom
+                  <input type="text" name="first_name" autocomplete="given-name" maxlength="80" required />
+                </label>
+                <label>
+                  Nom
+                  <input type="text" name="last_name" autocomplete="family-name" maxlength="80" required />
+                </label>
+                <label class="field-full">
+                  Email
+                  <input type="email" name="email" autocomplete="email" maxlength="254" required />
+                </label>
+                <label class="field-full">
+                  Objectif principal
+                  <select name="primary_goal" required>
+                    <option value="">Choisir un objectif</option>
+                    <option value="sommeil">Améliorer le sommeil</option>
+                    <option value="energie">Gagner en énergie</option>
+                    <option value="concentration">Booster la concentration</option>
+                    <option value="composition_corporelle">Optimiser la composition corporelle</option>
+                    <option value="routine">Tenir une routine régulière</option>
+                  </select>
+                </label>
+              </div>
+              <input type="hidden" name="source" value="manual" />
+              <label class="trap" aria-hidden="true">
+                Ne pas remplir
+                <input type="text" name="company" tabindex="-1" autocomplete="off" />
+              </label>
+              <label class="consent">
+                <input type="checkbox" name="consent_marketing" required />
+                J'accepte de recevoir les emails BioTrack (double confirmation requise).
+              </label>
+              <button type="submit" class="btn btn-primary">Je réserve ma place</button>
+              <p class="form-feedback" role="status" aria-live="polite"></p>
+              <p class="form-disclaimer">Aucun spam. Désinscription possible à tout moment.</p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="pourquoi" aria-labelledby="why-title">
+        <div class="container">
+          <p class="eyebrow">Pourquoi BioTrack</p>
+          <h2 id="why-title">Un système unique pour routines, métriques et protocoles.</h2>
+          <div class="card-grid three-cols">
+            <article class="feature-card">
+              <img src="/assets/images/icon-focus.svg" alt="Icône concentration" width="56" height="56" />
+              <h3>Routines actionnables</h3>
+              <p>Transforme tes intentions en exécution quotidienne avec une checklist claire.</p>
+            </article>
+            <article class="feature-card">
+              <img src="/assets/images/icon-sommeil.svg" alt="Icône sommeil" width="56" height="56" />
+              <h3>Métriques utiles</h3>
+              <p>Suivi du sommeil, de l'énergie, de l'humeur et de la concentration sur des périodes utiles.</p>
+            </article>
+            <article class="feature-card">
+              <img src="/assets/images/icon-recovery.svg" alt="Icône récupération" width="56" height="56" />
+              <h3>Protocoles + suppléments</h3>
+              <p>Coordonne protocole de performance et prise de suppléments sans perdre le fil.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="comment" aria-labelledby="how-title">
+        <div class="container">
+          <p class="eyebrow">Comment ça marche</p>
+          <h2 id="how-title">Configurer, suivre, analyser.</h2>
+          <ol class="steps">
+            <li>
+              <h3>1. Configure ton protocole</h3>
+              <p>Choisis tes objectifs, routines et indicateurs clés (sommeil, énergie, focus, etc.).</p>
+            </li>
+            <li>
+              <h3>2. Enregistre chaque jour</h3>
+              <p>Capture rapidement tes données, complète ta checklist et respecte ton plan.</p>
+            </li>
+            <li>
+              <h3>3. Analyse l'évolution</h3>
+              <p>Visualise les tendances, ajuste tes protocoles et optimise tes résultats semaine après semaine.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section reveal" id="preuves" aria-labelledby="proof-title">
+        <div class="container">
+          <p class="eyebrow">Preuves produit</p>
+          <h2 id="proof-title">Mockups stylisés (V1) + zones prévues pour captures réelles.</h2>
+          <div class="mockup-grid">
+            <figure class="mockup-card">
+              <img src="/assets/images/mockup-checklist.svg" alt="Mockup écran checklist quotidienne" width="360" height="640" />
+              <figcaption>Checklist et objectifs du jour.</figcaption>
+            </figure>
+            <figure class="mockup-card">
+              <img src="/assets/images/mockup-track.svg" alt="Mockup écran saisie métriques" width="360" height="640" />
+              <figcaption>Saisie rapide des métriques.</figcaption>
+            </figure>
+            <figure class="mockup-card">
+              <img src="/assets/images/mockup-stats.svg" alt="Mockup écran statistiques de progression" width="360" height="640" />
+              <figcaption>Visualisation des tendances.</figcaption>
+            </figure>
+          </div>
+          <div class="screenshot-placeholders" aria-label="Emplacements captures réelles V1.1">
+            <article class="placeholder-card">
+              <h3>Capture réelle à intégrer: Suivi quotidien</h3>
+              <p>Recommandé dès V1.1 pour renforcer la crédibilité conversion.</p>
+            </article>
+            <article class="placeholder-card">
+              <h3>Capture réelle à intégrer: Statistiques</h3>
+              <p>Recommandé dès V1.1 pour montrer la profondeur analytique.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section privacy-section reveal" id="confidentialite" aria-labelledby="privacy-title">
+        <div class="container privacy-grid">
+          <div>
+            <p class="eyebrow">Confidentialité</p>
+            <h2 id="privacy-title">Privacy-first par conception</h2>
+            <p>
+              BioTrack stocke les données utilisateur localement sur l'appareil.
+              Aucune vente de données santé. L'import HealthKit est facultatif et dépend de vos permissions iOS.
+            </p>
+          </div>
+          <ul>
+            <li>Données locales par défaut</li>
+            <li>Pas de tracking santé côté serveur</li>
+            <li>Consentement explicite pour la communication email</li>
+            <li>Export CSV sous contrôle utilisateur</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section reveal" id="faq" aria-labelledby="faq-title">
+        <div class="container">
+          <p class="eyebrow">FAQ</p>
+          <h2 id="faq-title">Questions fréquentes sur BioTrack</h2>
+          <div class="faq-list">
+            <details>
+              <summary>BioTrack est-il une app biohacking ou une app fitness classique ?</summary>
+              <p>BioTrack cible l'optimisation globale: routines, sommeil, focus, protocoles et suppléments, pas seulement l'entraînement.</p>
+            </details>
+            <details>
+              <summary>Mes données sont-elles envoyées sur un serveur externe ?</summary>
+              <p>Non. Les données de suivi restent sur l'appareil, avec un mode privacy-first.</p>
+            </details>
+            <details>
+              <summary>Pourquoi dois-je confirmer mon email ?</summary>
+              <p>La waitlist utilise un double opt-in pour garantir un consentement explicite et une base propre.</p>
+            </details>
+            <details>
+              <summary>L'app fonctionne-t-elle avec HealthKit ?</summary>
+              <p>Oui, l'import de métriques HealthKit est optionnel et dépend des autorisations que vous accordez.</p>
+            </details>
+            <details>
+              <summary>À qui s'adresse BioTrack ?</summary>
+              <p>Aux profils orientés performance: sportifs, entrepreneurs et travailleurs cognitifs qui veulent une routine mesurable.</p>
+            </details>
+            <details>
+              <summary>Quels indicateurs puis-je suivre ?</summary>
+              <p>Sommeil, énergie, humeur, concentration, poids, pas, fréquence cardiaque au repos, HRV, et plus.</p>
+            </details>
+            <details>
+              <summary>Peut-on suivre des protocoles et suppléments ?</summary>
+              <p>Oui. BioTrack intègre un module protocoles et un module suppléments avec historique d'adhérence.</p>
+            </details>
+            <details>
+              <summary>Est-ce adapté à une approche scientifique personnelle ?</summary>
+              <p>Oui. L'objectif est de rendre l'auto-expérimentation structurée et exploitable dans le temps.</p>
+            </details>
+            <details>
+              <summary>Quand la bêta sera-t-elle ouverte ?</summary>
+              <p>La date est communiquée par email aux membres de la waitlist confirmés.</p>
+            </details>
+            <details>
+              <summary>Comment me retirer de la liste ?</summary>
+              <p>Chaque email contient un lien de désinscription, utilisable en un clic.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="waitlist" aria-labelledby="waitlist-title">
+        <div class="container waitlist-panel">
+          <div>
+            <p class="eyebrow">Waitlist qualifiée</p>
+            <h2 id="waitlist-title">Prends une place parmi les premiers profils testeurs.</h2>
+            <p>
+              L'inscription prend moins d'une minute. Tu confirmes ensuite ton email pour activer ta demande.
+            </p>
+          </div>
+          <form class="lead-form" data-form-location="waitlist" novalidate>
+            <div class="form-grid">
+              <label>
+                Prénom
+                <input type="text" name="first_name" autocomplete="given-name" maxlength="80" required />
+              </label>
+              <label>
+                Nom
+                <input type="text" name="last_name" autocomplete="family-name" maxlength="80" required />
+              </label>
+              <label class="field-full">
+                Email
+                <input type="email" name="email" autocomplete="email" maxlength="254" required />
+              </label>
+              <label class="field-full">
+                Objectif principal
+                <select name="primary_goal" required>
+                  <option value="">Choisir un objectif</option>
+                  <option value="sommeil">Améliorer le sommeil</option>
+                  <option value="energie">Gagner en énergie</option>
+                  <option value="concentration">Booster la concentration</option>
+                  <option value="composition_corporelle">Optimiser la composition corporelle</option>
+                  <option value="routine">Tenir une routine régulière</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="source" value="manual" />
+            <label class="trap" aria-hidden="true">
+              Ne pas remplir
+              <input type="text" name="company" tabindex="-1" autocomplete="off" />
+            </label>
+            <label class="consent">
+              <input type="checkbox" name="consent_marketing" required />
+              J'accepte de recevoir les informations de lancement BioTrack.
+            </label>
+            <button type="submit" class="btn btn-primary">Rejoindre maintenant</button>
+            <p class="form-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <p><strong>BioTrack</strong> • App biohacking iOS orientée performance et confidentialité.</p>
+        <nav aria-label="Liens légaux">
+          <a href="/mentions-legales.html">Mentions légales</a>
+          <a href="/politique-confidentialite.html">Politique de confidentialité</a>
+          <a href="/contact.html">Contact</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,16 +1,30 @@
 import SwiftUI
 
+struct ChartPoint {
+	let date: Date
+	let displayValue: Double
+	let rawValue: Double
+}
+
 struct ChartSeries: Identifiable {
 	let id = UUID()
 	let name: String
 	let color: Color
-	let points: [(Date, Double)]
+	let points: [ChartPoint]
+	let rawUnit: String
+	let rawValueFormatter: ((Double) -> String)?
 }
 
 struct MultiSeriesChart: View {
+	enum YAxisMode {
+		case durationMinutes
+		case numeric
+	}
+
 	let series: [ChartSeries]
 	let style: StatsView.ChartStyle
 	let unit: String
+	let yAxisMode: YAxisMode
 	let ticks: [Date]?
 	let yMinForced: Double?
 	let yMaxForced: Double?
@@ -52,7 +66,7 @@ struct MultiSeriesChart: View {
 		}
 	}
 
-	private let leftPadding: CGFloat = 40
+	private let leftPadding: CGFloat = 56
 	private let rightPadding: CGFloat = 20 // garde pour éviter chevauchement
 	private let topPadding: CGFloat = 10
 	private let bottomPadding: CGFloat = 48
@@ -79,20 +93,21 @@ struct MultiSeriesChart: View {
 				}
 				.stroke(Color.secondary.opacity(0.25), style: StrokeStyle(lineWidth: 0.5, dash: [4,3]))
 			}
-			ForEach(yTickValues, id: \.self) { v in
-				Text(labelY(v))
+				ForEach(yTickValues, id: \.self) { v in
+					Text(labelY(v))
+						.font(.system(size: 10))
+						.foregroundColor(.secondary)
+						.lineLimit(1)
+						.minimumScaleFactor(0.75)
+						.frame(width: leftPadding - 10, alignment: .trailing)
+						.position(x: (leftPadding - 10) / 2, y: yPosition(for: v, in: r) - 6)
+				}
+				// Unité Y centrée verticalement, à gauche de l’axe
+				Text(unit)
 					.font(.system(size: 10))
 					.foregroundColor(.secondary)
-					.lineLimit(1)
-					.fixedSize(horizontal: true, vertical: false)
-					.position(x: leftPadding-24, y: yPosition(for: v, in: r) - 6)
-			}
-			// Unité Y centrée verticalement, à gauche de l’axe
-			Text(unit)
-				.font(.system(size: 10))
-				.foregroundColor(.secondary)
-				.rotationEffect(.degrees(-90))
-				.position(x: leftPadding-40, y: (topPadding + (r.height-bottomPadding)) / 2)
+					.rotationEffect(.degrees(-90))
+					.position(x: 10, y: (topPadding + (r.height-bottomPadding)) / 2)
 			let tickDates = ticks ?? defaultTicks()
 			if let first = tickDates.first, let last = tickDates.last {
 				ForEach(tickDates, id: \.self) { d in
@@ -160,7 +175,7 @@ struct MultiSeriesChart: View {
 
 	private func bars(in r: CGRect) -> some View {
 		let all = series.flatMap { $0.points }
-		let uniqueDates = Array(Set(all.map { $0.0 })).sorted()
+		let uniqueDates = Array(Set(all.map { $0.date })).sorted()
 		var slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(max(uniqueDates.count, 1))
 		if let t = ticks, let first = t.first, let last = t.last {
 			let cal = Calendar.current
@@ -205,9 +220,9 @@ struct MultiSeriesChart: View {
 		}
 	}
 
-	private func normalizedPoints(_ points: [(Date, Double)], in r: CGRect) -> [CGPoint] {
-		let sorted = points.sorted { $0.0 < $1.0 }
-		guard let fallbackFirst = sorted.first?.0, let fallbackLast = sorted.last?.0 else { return [] }
+	private func normalizedPoints(_ points: [ChartPoint], in r: CGRect) -> [CGPoint] {
+		let sorted = points.sorted { $0.date < $1.date }
+		guard let fallbackFirst = sorted.first?.date, let fallbackLast = sorted.last?.date else { return [] }
 		let cal = Calendar.current
 		let range: (Date, Date)
 		if let t = ticks, let first = t.first, let last = t.last { range = (first, last) }
@@ -217,10 +232,10 @@ struct MultiSeriesChart: View {
 		let total = lastEnd.timeIntervalSince1970 - firstDay.timeIntervalSince1970
 		let (minV, maxV) = yRange()
 		let plotWidth = r.width - leftPadding - rightPadding
-		return sorted.map { (d, v) in
-			let clampedDate = min(max(d, firstDay), lastEnd)
+		return sorted.map { point in
+			let clampedDate = min(max(point.date, firstDay), lastEnd)
 			let x = leftPadding + CGFloat((clampedDate.timeIntervalSince1970 - firstDay.timeIntervalSince1970)/total) * plotWidth
-			let norm = (v - minV) / max(maxV - minV, 1e-6)
+			let norm = (point.displayValue - minV) / max(maxV - minV, 1e-6)
 			let y = (r.height-bottomPadding) - CGFloat(norm) * (r.height-bottomPadding-topPadding)
 			return CGPoint(x: x, y: y)
 		}
@@ -228,7 +243,7 @@ struct MultiSeriesChart: View {
 
 	private func yRange() -> (Double, Double) {
 		if let minF = yMinForced, let maxF = yMaxForced { return (minF, maxF) }
-		let allVals = series.flatMap { $0.points.map { $0.1 } }
+		let allVals = series.flatMap { $0.points.map(\.displayValue) }
 		let rawMin = allVals.min() ?? 0
 		let rawMax = allVals.max() ?? 1
 		// marge de 10% et garde-fous si min == max
@@ -251,13 +266,13 @@ struct MultiSeriesChart: View {
 	private func labelY(_ v: Double) -> String {
 		if let f = valueFormatter { return f(v) }
 		let safe = max(0, v)
-		if unit.lowercased().contains("h") {
+		if yAxisMode == .durationMinutes {
 			let mins = max(0, Int(round(safe)))
 			let h = mins/60
 			let mm = mins%60
 			return String(format: "%dh%02d", h, mm)
 		}
-		return safe >= 100 ? String(Int(safe)) : String(format: "%.0f", safe)
+		return safe >= 100 ? String(Int(safe.rounded())) : String(format: "%.0f", safe)
 	}
 
 	private func averageLine(at value: Double, in r: CGRect) -> some View {
@@ -280,7 +295,7 @@ struct MultiSeriesChart: View {
 
 	private func dateRange() -> (Date, Date)? {
 		let all = series.flatMap { $0.points }
-		guard let minD = all.map({ $0.0 }).min(), let maxD = all.map({ $0.0 }).max() else { return nil }
+		guard let minD = all.map(\.date).min(), let maxD = all.map(\.date).max() else { return nil }
 		return (minD, maxD)
 	}
 
@@ -319,12 +334,14 @@ struct MultiSeriesChart: View {
 		var candidates: [(CGPoint, String, CGFloat)] = []
 		let f = DateFormatter(); f.dateStyle = .medium
 		for s in series {
-			let pts = normalizedPoints(s.points, in: r)
-			let sorted = s.points.sorted { $0.0 < $1.0 }
+			let sorted = s.points.sorted { $0.date < $1.date }
+			let pts = normalizedPoints(sorted, in: r)
 			for (i, p) in pts.enumerated() where i < sorted.count {
-				let (date, val) = sorted[i]
-				let valueText = valueFormatter?(val) ?? (val >= 100 ? String(Int(val)) : String(format: "%.0f", val))
-				let text = "\(s.name)\n\(f.string(from: date)) • \(valueText) \(unit)"
+				let point = sorted[i]
+				let rawValue = point.rawValue
+				let valueText = s.rawValueFormatter?(rawValue) ?? (rawValue >= 100 ? String(Int(rawValue)) : String(format: "%.0f", rawValue))
+				let unitSuffix = s.rawUnit.isEmpty ? "" : " \(s.rawUnit)"
+				let text = "\(s.name)\n\(f.string(from: point.date)) • \(valueText)\(unitSuffix)"
 				let dist = hypot(location.x - p.x, location.y - p.y)
 				candidates.append((p, text, dist))
 			}
@@ -361,22 +378,123 @@ struct MultiSeriesChart: View {
 
 	private func makeNiceYTicks() -> [Double] {
 		let (minV, maxV) = yRange()
-		let span = maxV - minV
-		if span.isNaN || span <= 0 { return [minV, maxV] }
-		// Durées: choisir un pas 15/30/60 min qui donne 4..8 ticks
-		let isDuration = (unit.lowercased().contains("h") || valueFormatter != nil)
-		if isDuration {
-			let step: Double = 30 // pas fixe 30 minutes
-			var ticks: [Double] = [minV]
-			var v = (ceil(minV / step)) * step
-			if abs(v - minV) < 1e-6 { v += step }
-			while v < maxV - 1e-6 { ticks.append(v); v += step }
-			ticks.append(maxV)
-			return ticks
+		guard minV.isFinite, maxV.isFinite else { return [0, 1] }
+		guard maxV > minV else { return [minV] }
+		switch yAxisMode {
+		case .durationMinutes:
+			return durationTicks(minValue: minV, maxValue: maxV)
+		case .numeric:
+			return numericTicks(minValue: minV, maxValue: maxV)
 		}
-		// Valeurs génériques: 6 ticks uniformes
-		let count = 6
-		return (0..<count).map { i in minV + (Double(i) * span / Double(count - 1)) }
+	}
+
+	private func durationTicks(minValue: Double, maxValue: Double) -> [Double] {
+		let allowedSteps: [Double] = [15, 30, 60, 120, 180, 240]
+		var selectedStep = allowedSteps[0]
+		var bestScore = Double.greatestFiniteMagnitude
+
+		for step in allowedSteps {
+			let lower = floor(minValue / step) * step
+			let upper = ceil(maxValue / step) * step
+			let count = max(2, Int(round((upper - lower) / step)) + 1)
+			let overloadPenalty = count < 4 ? Double((4 - count) * 3) : (count > 7 ? Double(count - 7) : 0)
+			let score = overloadPenalty * 100 + abs(Double(count) - 5)
+			if score < bestScore {
+				bestScore = score
+				selectedStep = step
+			}
+		}
+
+		let lower = floor(minValue / selectedStep) * selectedStep
+		let upper = ceil(maxValue / selectedStep) * selectedStep
+		return constrainedTicks(from: lower, to: upper, step: selectedStep)
+	}
+
+	private func numericTicks(minValue: Double, maxValue: Double) -> [Double] {
+		let span = maxValue - minValue
+		guard span > 0 else { return [minValue] }
+
+		var step = niceNumber(span / 4.0, round: true)
+		var lower = floor(minValue / step) * step
+		var upper = ceil(maxValue / step) * step
+		var ticks = constrainedTicks(from: lower, to: upper, step: step)
+		var guardCount = 0
+
+		while ticks.count > 7 && guardCount < 8 {
+			step = niceNumber(step * 1.6, round: false)
+			lower = floor(minValue / step) * step
+			upper = ceil(maxValue / step) * step
+			ticks = constrainedTicks(from: lower, to: upper, step: step)
+			guardCount += 1
+		}
+
+		return ticks
+	}
+
+	private func constrainedTicks(from lower: Double, to upper: Double, step: Double) -> [Double] {
+		guard step > 0, upper.isFinite, lower.isFinite else { return [lower, upper] }
+		var ticks: [Double] = []
+		var current = lower
+		var safety = 0
+		while current <= upper + (step * 0.5), safety < 256 {
+			ticks.append(roundTick(current))
+			current += step
+			safety += 1
+		}
+		if ticks.isEmpty { ticks = [roundTick(lower), roundTick(upper)] }
+		ticks = deduplicatedTicks(ticks)
+
+		if ticks.count > 7 {
+			let stride = Int(ceil(Double(ticks.count - 1) / Double(7 - 1)))
+			var reduced = ticks.enumerated().compactMap { index, value in
+				index % max(stride, 1) == 0 ? value : nil
+			}
+			if let last = ticks.last, reduced.last != last {
+				reduced.append(last)
+			}
+			ticks = deduplicatedTicks(reduced)
+		}
+
+		return ticks
+	}
+
+	private func deduplicatedTicks(_ ticks: [Double]) -> [Double] {
+		var seen: Set<String> = []
+		var out: [Double] = []
+		for tick in ticks.sorted() {
+			let key = String(format: "%.6f", tick)
+			if !seen.contains(key) {
+				seen.insert(key)
+				out.append(tick)
+			}
+		}
+		return out
+	}
+
+	private func roundTick(_ value: Double) -> Double {
+		let rounded = (value * 1_000_000).rounded() / 1_000_000
+		return rounded == -0 ? 0 : rounded
+	}
+
+	private func niceNumber(_ value: Double, round: Bool) -> Double {
+		guard value.isFinite, value > 0 else { return 1 }
+		let exponent = floor(log10(value))
+		let fraction = value / pow(10, exponent)
+		let niceFraction: Double
+		if round {
+			if fraction < 1.5 { niceFraction = 1 }
+			else if fraction < 2.25 { niceFraction = 2 }
+			else if fraction < 3.75 { niceFraction = 2.5 }
+			else if fraction < 7.5 { niceFraction = 5 }
+			else { niceFraction = 10 }
+		} else {
+			if fraction <= 1 { niceFraction = 1 }
+			else if fraction <= 2 { niceFraction = 2 }
+			else if fraction <= 2.5 { niceFraction = 2.5 }
+			else if fraction <= 5 { niceFraction = 5 }
+			else { niceFraction = 10 }
+		}
+		return niceFraction * pow(10, exponent)
 	}
 }
 
@@ -390,5 +508,3 @@ private struct Triangle: Shape {
 		return p
 	}
 }
-
-

@@ -55,13 +55,20 @@ struct ManageRemindersSheet: View {
                                   enabled: data.notificationsEnabled)
                 state.reminders.append(r)
                 state.save()
+                if r.enabled {
+                    NotificationService.shared.scheduleReminder(r)
+                }
             }
         }
         .sheet(item: $showingEdit) { r in
             EditReminderSheet(reminder: r) { updated in
                 if let idx = state.reminders.firstIndex(where: { $0.id == r.id }) {
+                    NotificationService.shared.cancelReminder(baseId: state.reminders[idx].notificationBaseId)
                     state.reminders[idx] = updated
                     state.save()
+                    if updated.enabled {
+                        NotificationService.shared.scheduleReminder(updated)
+                    }
                 }
             }
         }
@@ -69,6 +76,7 @@ struct ManageRemindersSheet: View {
 
     private func delete(_ r: Reminder) {
         if let idx = state.reminders.firstIndex(where: { $0.id == r.id }) {
+            NotificationService.shared.cancelReminder(baseId: state.reminders[idx].notificationBaseId)
             state.reminders.remove(at: idx)
             state.save()
             Haptics.success()
@@ -84,5 +92,4 @@ struct ManageRemindersSheet: View {
         return "  •  " + str
     }
 }
-
 

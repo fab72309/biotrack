@@ -21,6 +21,20 @@
                ReferencedContainer = "container:BioTrack.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "458A65D4D3A30AB44AF90E8E"
+               BuildableName = "BioTrackWidgetExtension.appex"
+               BlueprintName = "BioTrackWidgetExtension"
+               ReferencedContainer = "container:BioTrack.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
