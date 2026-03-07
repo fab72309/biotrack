@@ -66,7 +66,9 @@ enum SharedStore {
     static func save(_ snapshot: BioTrackSnapshot) {
         do {
             let data = try JSONEncoder().encode(snapshot)
-            try data.write(to: AppGroup.storeURL(), options: .atomic)
+            let url = AppGroup.storeURL()
+            try data.write(to: url, options: .atomic)
+            AppGroup.excludeFromBackup(url)
         } catch {
             print("SharedStore save error:", error)
         }
@@ -93,11 +95,13 @@ enum SharedStore {
 
         do {
             try fm.moveItem(at: originalURL, to: backupURL)
+            AppGroup.excludeFromBackup(backupURL)
             return backupURL
         } catch {
             // Try copy as a fallback so the original file remains inspectable.
             do {
                 try fm.copyItem(at: originalURL, to: backupURL)
+                AppGroup.excludeFromBackup(backupURL)
                 return backupURL
             } catch {
                 print("SharedStore backup preserve error:", error)

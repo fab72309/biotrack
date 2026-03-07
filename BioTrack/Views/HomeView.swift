@@ -38,21 +38,17 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 6.4) {
-                        Image("TitleLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 54.6, height: 54.6)
-                        Text("BioTrack")
-                            .font(.system(size: 25.5, weight: .bold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("BioTrack")
+                    brandMark
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showSettings = true }) { Image(systemName: "gearshape") }
+                    Button(action: { showSettings = true }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(Color("Primary"))
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Paramètres")
                 }
             }
         }
@@ -146,6 +142,16 @@ struct HomeView: View {
         }
     }
 
+    private var brandMark: some View {
+        Image("HeaderLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 34, height: 34)
+            .frame(width: 36, height: 36, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("BioTrack")
+    }
+
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -164,16 +170,16 @@ struct HomeView: View {
                     .clipShape(Capsule())
             }
             Spacer()
-            streakLogoButton
+            todayTasksButton
                 .offset(x: 4, y: -8)
         }
     }
 
-    private var streakLogoButton: some View {
-        let perfectStreak = StreakEngine.perfectCompletionStreak(snapshot: state.buildSnapshot())
+    private var todayTasksButton: some View {
+        let pendingTasks = todayTaskCount()
         return Button(action: {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
-                showingStreakAchievements = true
+                showingObjectives = true
             }
         }) {
             ZStack {
@@ -191,7 +197,7 @@ struct HomeView: View {
                             .stroke(Color.white.opacity(0.45), lineWidth: 1)
                     )
                     .shadow(color: Color("Primary").opacity(0.35), radius: 8, x: 0, y: 4)
-                Text("\(perfectStreak)")
+                Text(todayTasksBadgeLabel(for: pendingTasks))
                     .font(.system(size: 17, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
                     .lineLimit(1)
@@ -200,9 +206,16 @@ struct HomeView: View {
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Voir vos succès de séries")
-        .accessibilityValue("\(perfectStreak) jours consécutifs à 100 pour cent")
-        .accessibilityHint("Affiche un résumé de vos meilleurs résultats")
+        .contextMenu {
+            Button {
+                showingStreakAchievements = true
+            } label: {
+                Label("Voir les succès", systemImage: "trophy.fill")
+            }
+        }
+        .accessibilityLabel("Voir les éléments à faire aujourd'hui")
+        .accessibilityValue("\(pendingTasks) élément(s) restant(s)")
+        .accessibilityHint("Affiche le détail de vos actions du jour")
     }
 
     private var checkInCard: some View {
@@ -678,6 +691,26 @@ struct HomeView: View {
         if state.checkIn(for: .morning) != nil { count += 1 }
         if state.checkIn(for: .evening) != nil { count += 1 }
         return count
+    }
+
+    private var pendingCheckInPeriods: [CheckInPeriod] {
+        CheckInPeriod.allCases.filter { state.checkIn(for: $0) == nil }
+    }
+
+    private func pendingProtocolsToday() -> [ProtocolItem] {
+        protocolsScheduledToday().filter { !isProtocolDoneToday($0) }
+    }
+
+    private func pendingSupplementsToday() -> [Supplement] {
+        supplementsScheduledToday().filter { !isSupplementTakenToday($0) }
+    }
+
+    private func todayTaskCount() -> Int {
+        pendingCheckInPeriods.count + pendingProtocolsToday().count + pendingSupplementsToday().count
+    }
+
+    private func todayTasksBadgeLabel(for count: Int) -> String {
+        count > 99 ? "99+" : "\(count)"
     }
 
     private var selectedCheckInMetrics: [Metric] {

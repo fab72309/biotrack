@@ -1,10 +1,71 @@
 "tab.checklist" = "Checklist";
-"tab.track" = "Track";
-"tab.stats" = "Stats";
-"tab.protocols" = "Protocols";
-"tab.supplements" = "Supplements";
-"action.add" = "Add";
-"empty.state" = "Nothing here yet.";
-"checklist.completed" = "Completed";
-"permissions.health.read" = "Allow Health access to prefill metrics?";
-"permissions.notifications" = "Enable reminders?";
+"tab.track" = "Suivi";
+"tab.stats" = "Statistiques";
+"tab.protocols" = "Protocoles";
+"tab.supplements" = "Suppléments";
+"action.add" = "Ajouter";
+"action.close" = "Fermer";
+"empty.state" = "Rien pour le moment.";
+"checklist.completed" = "Terminé";
+"permissions.health.read" = "Autoriser l'accès Santé pour pré-remplir les métriques ?";
+"permissions.notifications" = "Activer les rappels ?";
+
+"status.authorized" = "Autorisé";
+"status.denied" = "Refusé";
+"status.not_configured" = "Non configuré";
+"status.not_available" = "Indisponible";
+"status.unknown" = "Inconnu";
+
+"launch.loading.title" = "BioTrack";
+"launch.loading.subtitle" = "Préparation de votre espace de suivi.";
+
+"onboarding.brand" = "BIOTRACK";
+"onboarding.step.counter" = "Étape %d sur %d";
+"onboarding.action.later" = "Plus tard";
+"onboarding.action.open_settings" = "Ouvrir Réglages";
+"onboarding.action.continue" = "Continuer";
+
+"onboarding.welcome.title" = "Suivez l'essentiel, simplement.";
+"onboarding.welcome.subtitle" = "BioTrack réunit vos rappels, vos métriques et vos routines dans une app locale, claire et rapide à prendre en main.";
+"onboarding.welcome.benefit.1" = "Checklist, rappels et suivi quotidien au même endroit.";
+"onboarding.welcome.benefit.2" = "Connexion facultative à Santé pour pré-remplir sommeil, pas, poids, FC au repos et HRV.";
+"onboarding.welcome.benefit.3" = "Vos données restent sur votre appareil, sauf export manuel de votre part.";
+"onboarding.welcome.primary" = "Accéder à BioTrack";
+"onboarding.welcome.legal_intro" = "Avant de commencer, vous pouvez consulter nos informations légales et de support.";
+
+"onboarding.notifications.title" = "Notifications";
+"onboarding.notifications.subtitle" = "Activez les rappels quand cela vous est utile.";
+"onboarding.notifications.point.1" = "BioTrack utilise uniquement des notifications locales pour vos rappels personnels.";
+"onboarding.notifications.point.2" = "Aucune notification marketing ou promotionnelle n'est envoyée.";
+"onboarding.notifications.point.3" = "Vous pourrez modifier ce choix à tout moment dans les Réglages iOS.";
+"onboarding.notifications.footnote" = "Les rappels sont planifiés localement sur votre appareil après votre accord explicite.";
+"onboarding.notifications.primary" = "Autoriser";
+
+"onboarding.health.title" = "App Santé";
+"onboarding.health.subtitle" = "Connectez l'app Santé pour pré-remplir automatiquement certaines métriques.";
+"onboarding.health.point.1" = "Lecture possible de : sommeil, pas, poids, fréquence cardiaque au repos et HRV.";
+"onboarding.health.point.2" = "Ces données servent uniquement au pré-remplissage local dans BioTrack.";
+"onboarding.health.point.3" = "L'accès peut être retiré à tout moment depuis Réglages iOS > Santé.";
+"onboarding.health.footnote" = "BioTrack fonctionne sans compte, sans backend BioTrack et sans usage publicitaire de vos données.";
+"onboarding.health.primary" = "Connecter";
+
+"legal.privacy.title" = "Confidentialité";
+"legal.privacy.summary.1" = "BioTrack stocke vos données de suivi localement sur votre appareil. Aucun compte utilisateur n'est requis et BioTrack n'envoie pas vos données à un serveur dédié.";
+"legal.privacy.summary.2" = "Si vous activez l'accès à Santé, seules les catégories autorisées par vous sont lues afin de pré-remplir certaines métriques dans l'app.";
+"legal.privacy.summary.3" = "BioTrack ne vend pas vos données. Les exports sont manuels, initiés par vous et enregistrés à l'emplacement que vous choisissez.";
+"legal.privacy.open" = "Ouvrir la politique complète";
+
+"legal.support.title" = "Support";
+"legal.support.summary.1" = "Pour toute question sur l'app, la confidentialité ou un problème d'utilisation, vous pouvez contacter BioTrack par email.";
+"legal.support.summary.2" = "Contact direct : hello@biotrack.app.";
+"legal.support.summary.3" = "Site public : https://biotrack.app.";
+"legal.support.open" = "Ouvrir la page support";
+"legal.support.email" = "Envoyer un email";
+
+"legal.terms.title" = "Conditions d'utilisation";
+"legal.terms.summary.1" = "L'utilisation de BioTrack est soumise au contrat de licence utilisateur final standard Apple.";
+"legal.terms.summary.2" = "Aucun CLUF BioTrack personnalisé n'est ajouté dans cette version.";
+"legal.terms.open" = "Ouvrir le CLUF standard Apple";
+
+"settings.legal.section" = "Légal";
+"settings.review_onboarding" = "Revoir l'accueil et les autorisations";

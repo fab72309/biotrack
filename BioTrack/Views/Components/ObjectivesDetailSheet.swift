@@ -53,17 +53,30 @@ struct ObjectivesDetailContent: View {
     }
 
     private var todayView: some View {
-        let completedProtocols = state.protocols.filter { isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
-        let completedSupps = state.supplements.filter { isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
-        let remainingProtocols = state.protocols.filter { !isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
-        let remainingSupps = state.supplements.filter { !isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let remainingCheckIns = CheckInPeriod.allCases.filter { !isCheckInDone(on: Date(), period: $0) }
+        let todaysProtocols = scheduledProtocolsToday()
+        let todaysSupplements = scheduledSupplementsToday()
+        let completedProtocols = todaysProtocols.filter { isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let completedSupps = todaysSupplements.filter { isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let remainingProtocols = todaysProtocols.filter { !isProtocolDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
+        let remainingSupps = todaysSupplements.filter { !isSupplementDone(on: Date(), item: $0) }.sorted { $0.name < $1.name }
         return ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                if remainingProtocols.isEmpty && remainingSupps.isEmpty {
-                    Text("Aucun objectif restant aujourd'hui").foregroundStyle(.secondary).padding(.horizontal, 16)
+                if remainingCheckIns.isEmpty && remainingProtocols.isEmpty && remainingSupps.isEmpty {
+                    Text("Aucune action restante aujourd'hui").foregroundStyle(.secondary).padding(.horizontal, 16)
+                }
+                if !remainingCheckIns.isEmpty {
+                    Text("Check-ins").font(.subheadline.weight(.semibold)).padding(.horizontal, 16)
+                    ForEach(remainingCheckIns) { period in
+                        statusRow(
+                            title: "Check-in du \(period == .morning ? "matin" : "soir")",
+                            subtitle: "À compléter aujourd'hui",
+                            systemImage: "square.and.pencil"
+                        )
+                    }
                 }
                 if !remainingProtocols.isEmpty {
-                    Text("Protocoles").font(.subheadline.weight(.semibold)).padding(.horizontal, 16)
+                    Text("Protocoles").font(.subheadline.weight(.semibold)).padding(.horizontal, 16).padding(.top, remainingCheckIns.isEmpty ? 0 : 8)
                     ForEach(remainingProtocols) { p in
                         interactiveCompactRow(title: p.name, isDone: false) {
                             toggleProtocol(p)
@@ -140,6 +153,54 @@ struct ObjectivesDetailContent: View {
     private func isSupplementDone(on date: Date, item: Supplement) -> Bool {
         state.supplementIntakes.contains { $0.supplementId == item.id && Calendar.current.isDate($0.date, inSameDayAs: date) && $0.taken }
     }
+    private func isCheckInDone(on date: Date, period: CheckInPeriod) -> Bool {
+        state.dailyCheckIns.contains {
+            $0.period == period && Calendar.current.isDate($0.date, inSameDayAs: date)
+        }
+    }
+
+    private func currentWeekdayMon1ToSun7() -> Int {
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        return ((weekday + 5) % 7) + 1
+    }
+
+    private func isScheduledToday(_ frequency: Frequency, daysFallback: [Int]?) -> Bool {
+        switch frequency {
+        case .daily:
+            return true
+        case .timesPerDay:
+            return true
+        case .weekly(let days):
+            let set = Set((!days.isEmpty ? days : (daysFallback ?? [])).map { $0 })
+            if set.isEmpty { return true }
+            return set.contains(currentWeekdayMon1ToSun7())
+        }
+    }
+
+    private func scheduledProtocolsToday() -> [ProtocolItem] {
+        let profile = state.currentRoutineProfile()
+        let base = state.protocols.filter { item in
+            guard item.isActive(on: Date()) else { return false }
+            switch item.frequency {
+            case .daily, .timesPerDay:
+                return true
+            case .weekly(let days):
+                let set = Set(days)
+                if set.isEmpty { return true }
+                return set.contains(currentWeekdayMon1ToSun7())
+            }
+        }
+        return DailyPlanner.applyProfileFilters(to: base, profile: profile)
+    }
+
+    private func scheduledSupplementsToday() -> [Supplement] {
+        let profile = state.currentRoutineProfile()
+        let base = state.supplements.filter { item in
+            guard item.isActive(on: Date()) else { return false }
+            return isScheduledToday(item.frequency, daysFallback: item.daysOfWeek)
+        }
+        return DailyPlanner.applyProfileFilters(to: base, profile: profile)
+    }
 
     // Toggle helpers (compact interaction in popup)
     private func toggleProtocol(_ item: ProtocolItem) {
@@ -165,6 +226,29 @@ struct ObjectivesDetailContent: View {
 
 // Compact rows with checkbox
 private extension ObjectivesDetailContent {
+    func statusRow(title: String, subtitle: String? = nil, systemImage: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color("Primary"))
+                .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
+    }
+
     func interactiveCompactRow(title: String, isDone: Bool, toggle: @escaping () -> Void) -> some View {
         HStack(spacing: 10) {
             Button(action: toggle) {

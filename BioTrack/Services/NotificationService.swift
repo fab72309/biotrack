@@ -41,13 +41,10 @@ final class NotificationService {
         }
     }
 
-    func requestPermissionIfNeeded() {
-        center.getNotificationSettings { [weak self] settings in
-            guard let self else { return }
-            if settings.authorizationStatus == .notDetermined {
-                Task { _ = await self.requestPermission() }
-            } else {
-                self.configureCategories()
+    func authorizationStatus() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            center.getNotificationSettings { settings in
+                continuation.resume(returning: settings.authorizationStatus)
             }
         }
     }

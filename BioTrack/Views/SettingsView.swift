@@ -4,6 +4,8 @@ import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var state: AppState
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("hasCompletedInitialOnboarding") private var hasCompletedInitialOnboarding: Bool = false
     @AppStorage("darkMode") private var darkMode: Bool = false
     @AppStorage("showRecommendationsCard") private var showRecommendationsCard: Bool = true
     @AppStorage(CheckInMetricSelection.storageKey) private var selectedCheckInMetricIdsRaw: String = ""
@@ -23,6 +25,7 @@ struct SettingsView: View {
     @State private var importStatusMessage: String?
     @State private var showingImportAlert = false
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+    @State private var activeLegalDocument: LegalDocument?
 
     var body: some View {
         NavigationView {
@@ -213,6 +216,35 @@ struct SettingsView: View {
                 Section(header: Text("À propos")) {
                     HStack { Text("Version"); Spacer(); Text(appVersionText).foregroundColor(.secondary) }
                 }
+                Section(header: Text(NSLocalizedString("settings.legal.section", comment: ""))) {
+                    legalButton(
+                        title: NSLocalizedString("legal.privacy.title", comment: ""),
+                        systemImage: "lock.shield"
+                    ) {
+                        activeLegalDocument = .privacy
+                    }
+                    legalButton(
+                        title: NSLocalizedString("legal.support.title", comment: ""),
+                        systemImage: "questionmark.bubble"
+                    ) {
+                        activeLegalDocument = .support
+                    }
+                    legalButton(
+                        title: NSLocalizedString("legal.terms.title", comment: ""),
+                        systemImage: "doc.text"
+                    ) {
+                        activeLegalDocument = .terms
+                    }
+                    Button(action: reviewOnboarding) {
+                        HStack {
+                            Image(systemName: "sparkles.rectangle.stack")
+                            Text(NSLocalizedString("settings.review_onboarding", comment: ""))
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundColor(.secondary)
+                        }
+                    }
+                    .foregroundColor(.primary)
+                }
             }
             .navigationTitle(Text("Paramètres"))
             .fileExporter(isPresented: $showingExport,
@@ -276,6 +308,9 @@ struct SettingsView: View {
             } message: {
                 Text(importStatusMessage ?? "")
             }
+            .sheet(item: $activeLegalDocument) { document in
+                LegalNoticeView(document: document)
+            }
         }
         .onAppear {
             state.refreshHealthKitStatus()
@@ -284,12 +319,7 @@ struct SettingsView: View {
     }
 
     private var healthStatusText: String {
-        switch state.healthKitStatus {
-        case .notAvailable: return "Indisponible"
-        case .notDetermined: return "Non configuré"
-        case .denied: return "Refusé"
-        case .authorized: return "Autorisé"
-        }
+        state.healthKitStatus.localizedBioTrackLabel
     }
 
     private var dedupePolicy: HealthDedupePolicy {
@@ -319,17 +349,14 @@ struct SettingsView: View {
     }
 
     private var notificationStatusText: String {
-        switch notificationStatus {
-        case .authorized, .provisional, .ephemeral: return "Activé"
-        case .denied: return "Refusé"
-        case .notDetermined: return "Non configuré"
-        @unknown default: return "Inconnu"
-        }
+        notificationStatus.localizedBioTrackLabel
     }
 
     private func refreshNotificationStatus() {
         NotificationService.shared.getAuthorizationStatus { status in
-            notificationStatus = status
+            DispatchQueue.main.async {
+                notificationStatus = status
+            }
         }
     }
 
@@ -404,6 +431,24 @@ struct SettingsView: View {
             importStatusMessage = "Import chiffré échoué: \(error.localizedDescription)"
             showingImportAlert = true
         }
+    }
+
+    @ViewBuilder
+    private func legalButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: systemImage)
+                Text(title)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundColor(.secondary)
+            }
+        }
+        .foregroundColor(.primary)
+    }
+
+    private func reviewOnboarding() {
+        hasCompletedInitialOnboarding = false
+        dismiss()
     }
 }
 

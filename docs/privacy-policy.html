@@ -3,85 +3,139 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BioTrack - Politique de confidentialite</title>
+  <title>BioTrack - Politique de confidentialite / Privacy Policy</title>
   <style>
     :root {
-      --bg: #f7f7f3;
+      --bg: #f4f6fb;
       --paper: #ffffff;
-      --ink: #1f2a22;
-      --muted: #55635a;
-      --line: #d8e0da;
-      --accent: #0f766e;
+      --ink: #17202a;
+      --muted: #5d6975;
+      --line: #dde6ef;
+      --accent: #0b5cad;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: var(--bg);
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 38%, #f4f6fb 100%);
     }
     .wrap {
-      max-width: 860px;
+      max-width: 920px;
       margin: 0 auto;
       padding: 28px 18px 48px;
     }
     .paper {
       background: var(--paper);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 24px 22px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.04);
+      border-radius: 18px;
+      padding: 26px 24px;
+      box-shadow: 0 8px 28px rgba(8, 28, 52, 0.06);
     }
-    h1 { margin: 0 0 8px; font-size: 28px; }
-    h2 { margin-top: 24px; font-size: 18px; }
-    p, li { line-height: 1.55; color: var(--ink); }
-    .meta { color: var(--muted); margin-bottom: 16px; }
-    ul { padding-left: 20px; }
-    .notice {
+    h1 { margin: 0 0 10px; font-size: 30px; }
+    h2 { margin: 28px 0 10px; font-size: 21px; }
+    h3 { margin: 22px 0 8px; font-size: 17px; }
+    p, li { line-height: 1.62; }
+    ul { padding-left: 22px; }
+    .meta { color: var(--muted); margin-bottom: 18px; }
+    .section {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
       margin-top: 20px;
-      padding: 12px 14px;
-      border: 1px solid #f1d38a;
-      background: #fff9e8;
-      border-radius: 10px;
-      color: #6b4e08;
     }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #f9fbff;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .button:hover { border-color: var(--accent); color: var(--accent); }
     a { color: var(--accent); }
   </style>
 </head>
 <body>
   <main class="wrap">
     <article class="paper">
-      <h1>BioTrack - Politique de confidentialite</h1>
-      <p class="meta">Version MVP - a adapter avant soumission App Store.</p>
+      <h1>BioTrack - Politique de confidentialite / Privacy Policy</h1>
+      <p class="meta">Derniere mise a jour / Last updated: March 7, 2026</p>
+      <p>BioTrack est publie par Fabien Lopes. Contact support et confidentialite: <a href="mailto:hello@biotrack.app">hello@biotrack.app</a> - site public: <a href="https://biotrack.app">https://biotrack.app</a>.</p>
 
-      <p>BioTrack est une application de suivi personnel. Par defaut, les donnees de l'utilisateur sont stockees localement sur l'appareil. L'application ne cree pas de compte utilisateur et n'envoie pas les donnees a un serveur BioTrack.</p>
+      <section class="section" aria-labelledby="fr">
+        <h2 id="fr">Version francaise</h2>
 
-      <h2>Donnees stockees dans l'application</h2>
-      <ul>
-        <li>Protocoles, supplements, rappels et metriques saisis dans l'application</li>
-        <li>Entrees de suivi (check-ins, valeurs de metriques, historiques)</li>
-        <li>Preferences locales (ex. options d'affichage, configuration de sync)</li>
-      </ul>
+        <h3>Principes generaux</h3>
+        <p>BioTrack est une application de suivi personnel. Par defaut, vos donnees restent stockees localement sur votre appareil. L'application ne cree pas de compte BioTrack et n'envoie pas vos donnees a un serveur BioTrack dedie.</p>
 
-      <h2>HealthKit / app Sante</h2>
-      <p>Si vous activez l'integration Sante (HealthKit), BioTrack demandera uniquement les permissions necessaires aux categories que vous choisissez d'autoriser (par exemple sommeil, pas, poids, frequence cardiaque au repos, HRV).</p>
-      <p>Les donnees HealthKit sont utilisees pour pre-remplir des metriques dans BioTrack. Elles restent sur votre appareil, sauf si vous exportez volontairement vos donnees via les fonctions d'export de l'application.</p>
-      <p>Vous pouvez retirer l'acces a Sante a tout moment depuis les reglages iOS.</p>
+        <h3>Donnees traitees dans l'application</h3>
+        <ul>
+          <li>Protocoles, supplements, rappels, check-ins et metriques saisis dans l'application</li>
+          <li>Preferences locales, options de synchronisation et etat des permissions</li>
+          <li>Exports et sauvegardes uniquement lorsque vous les lancez vous-meme</li>
+        </ul>
 
-      <h2>Notifications</h2>
-      <p>Les rappels sont planifies localement sur votre appareil via le systeme de notifications iOS, apres votre consentement.</p>
+        <h3>App Sante / HealthKit</h3>
+        <p>Si vous activez l'integration Sante, BioTrack demande uniquement l'acces en lecture aux categories que l'app utilise reellement: sommeil, pas, poids, frequence cardiaque au repos et HRV. Ces donnees servent uniquement a pre-remplir certaines metriques dans BioTrack. Elles ne sont pas revendues, non plus utilisees a des fins publicitaires.</p>
+        <p>Vous pouvez refuser cette autorisation, utiliser BioTrack sans Sante, ou retirer l'acces a tout moment depuis les Reglages iOS.</p>
 
-      <h2>Export / sauvegarde</h2>
-      <p>L'application permet l'export manuel des donnees (y compris une option d'export chiffre). Les fichiers exportes sont stockes a l'emplacement que vous choisissez et restent sous votre controle.</p>
+        <h3>Notifications</h3>
+        <p>BioTrack peut planifier des rappels locaux sur votre appareil uniquement apres votre accord explicite. BioTrack n'envoie pas de notifications marketing.</p>
 
-      <h2>Partage avec des tiers</h2>
-      <p>BioTrack ne vend pas vos donnees et n'utilise pas de tracking publicitaire. Si vous partagez un export, ce partage est initie manuellement par vous via iOS.</p>
+        <h3>Export et partage</h3>
+        <p>Les exports et sauvegardes sont lances manuellement par vous. Les fichiers exportes sont sauvegardes a l'emplacement que vous choisissez et restent sous votre controle.</p>
 
-      <h2>Contact</h2>
-      <p>Pour toute question relative a la confidentialite ou au support, utilisez la page <a href="./support.html">Support</a>.</p>
+        <h3>Partage avec des tiers</h3>
+        <p>BioTrack ne vend pas vos donnees et n'utilise pas de suivi publicitaire. Aucun partage n'est effectue avec des tiers, sauf si vous decidez vous-meme de partager un export depuis iOS.</p>
 
-      <div class="notice">
-        Avant publication App Store: completez les informations de contact (email/site), la date de mise a jour et harmonisez ce texte avec les declarations "App Privacy" dans App Store Connect.
+        <h3>Contact et droits</h3>
+        <p>Pour toute question relative a la confidentialite, au support ou a vos donnees, contactez <a href="mailto:hello@biotrack.app">hello@biotrack.app</a>.</p>
+      </section>
+
+      <section class="section" aria-labelledby="en">
+        <h2 id="en">English version</h2>
+
+        <h3>General principles</h3>
+        <p>BioTrack is a personal tracking application. By default, your data stay stored locally on your device. The app does not create a BioTrack account and does not send your data to a dedicated BioTrack server.</p>
+
+        <h3>Data processed in the app</h3>
+        <ul>
+          <li>Protocols, supplements, reminders, check-ins, and metrics entered in the app</li>
+          <li>Local preferences, sync options, and permission state</li>
+          <li>Exports and backups only when you trigger them yourself</li>
+        </ul>
+
+        <h3>Health app / HealthKit</h3>
+        <p>If you enable Health integration, BioTrack requests read access only for the categories the app actually uses: sleep, steps, weight, resting heart rate, and HRV. These data are used only to prefill selected metrics inside BioTrack. They are not sold and not used for advertising purposes.</p>
+        <p>You can refuse this permission, use BioTrack without Health, or revoke access at any time in iOS Settings.</p>
+
+        <h3>Notifications</h3>
+        <p>BioTrack can schedule local reminders on your device only after your explicit consent. BioTrack does not send marketing notifications.</p>
+
+        <h3>Export and sharing</h3>
+        <p>Exports and backups are user-initiated. Exported files are saved to the location you choose and remain under your control.</p>
+
+        <h3>Third-party sharing</h3>
+        <p>BioTrack does not sell your data and does not use advertising tracking. No data are shared with third parties unless you decide to share an export yourself through iOS.</p>
+
+        <h3>Contact and requests</h3>
+        <p>For any privacy, support, or data question, contact <a href="mailto:hello@biotrack.app">hello@biotrack.app</a>.</p>
+      </section>
+
+      <div class="links">
+        <a class="button" href="./support.html">Support / Assistance</a>
+        <a class="button" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Standard Apple EULA</a>
       </div>
     </article>
   </main>

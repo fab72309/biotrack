@@ -20,4 +20,16 @@ enum AppGroup {
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         return documentsURL.appendingPathComponent(storeFileName)
     }
+
+    static func excludeFromBackup(_ url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        do {
+            var mutableURL = url
+            try mutableURL.setResourceValues(values)
+        } catch {
+            print("AppGroup excludeFromBackup error:", error)
+        }
+    }
 }
