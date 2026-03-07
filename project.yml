@@ -31,6 +31,7 @@ targets:
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: true
         NSHealthShareUsageDescription: "BioTrack lit vos données Santé (sommeil, pas, poids, fréquence cardiaque au repos, HRV) pour pré-remplir vos métriques."
+        NSHealthUpdateUsageDescription: "BioTrack peut enregistrer dans l’app Santé uniquement les données que vous choisissez explicitement de partager. Aucune donnée n’est écrite sans votre accord."
         CFBundleURLTypes:
           - CFBundleURLName: com.fabienlopes.biotrack
             CFBundleURLSchemes:
