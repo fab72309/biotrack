@@ -57,14 +57,16 @@
 
 "legal.support.title" = "Support";
 "legal.support.summary.1" = "For any question about the app, privacy, or a usage issue, you can contact BioTrack by email.";
-"legal.support.summary.2" = "Direct contact: hello@biotrack.app.";
-"legal.support.summary.3" = "Public website: https://biotrack.app.";
+"legal.support.summary.2" = "Public support and issue reporting are available from the official BioTrack repository.";
+"legal.support.summary.3" = "Never include health data or a backup file in a public support ticket.";
 "legal.support.open" = "Open the support page";
-"legal.support.email" = "Send an email";
+"legal.support.email" = "Open a support ticket";
 
 "legal.terms.title" = "Terms of Use";
 "legal.terms.summary.1" = "Use of BioTrack is subject to Apple's Standard End User License Agreement.";
-"legal.terms.summary.2" = "No custom BioTrack EULA is added in this release.";
+"legal.terms.summary.2" = "BioTrack is a personal wellness tracker. It is not a medical device and does not diagnose, treat, cure, or prevent any medical condition.";
+"legal.terms.summary.3" = "Statistical associations and recommendations are exploratory: they do not establish causation and do not replace professional medical advice.";
+"legal.terms.summary.4" = "Consult a healthcare professional before making medical decisions or taking supplements, especially if you use medication, are pregnant, have a condition, or experience symptoms.";
 "legal.terms.open" = "Open Apple's Standard EULA";
 
 "settings.legal.section" = "Legal";

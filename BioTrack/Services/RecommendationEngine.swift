@@ -83,6 +83,7 @@ enum RecommendationEngine {
         }
 
         if let topCorrelation = snapshot.correlationInsights
+            .filter({ $0.evidence == .moderate || $0.evidence == .strong })
             .sorted(by: { abs($0.pearson) > abs($1.pearson) })
             .first, abs(topCorrelation.pearson) >= 0.45 {
             items.append(

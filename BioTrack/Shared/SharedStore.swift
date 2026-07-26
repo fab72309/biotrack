@@ -68,6 +68,7 @@ enum SharedStore {
             let data = try JSONEncoder().encode(snapshot)
             let url = AppGroup.storeURL()
             try data.write(to: url, options: .atomic)
+            try applyFileProtection(to: url)
             AppGroup.excludeFromBackup(url)
         } catch {
             print("SharedStore save error:", error)
@@ -116,5 +117,14 @@ enum SharedStore {
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         return formatter.string(from: Date())
+    }
+
+    private static func applyFileProtection(to url: URL) throws {
+        #if os(iOS)
+        try FileManager.default.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: url.path
+        )
+        #endif
     }
 }

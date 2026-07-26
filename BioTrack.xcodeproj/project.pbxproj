@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -38,6 +38,7 @@
 		2D154BEB11E8BF862DF7844B /* BioTrackSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C879573B61970941152FD2C /* BioTrackSnapshot.swift */; };
 		307275C0E7819349F890C7AF /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933895008FB0C773003E5940 /* NotificationService.swift */; };
 		33C1103A53EC69CBDF94D006 /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A626FB0DECEFCC518C4D1DD /* InsightsEngine.swift */; };
+		35694DBA8CEDB2C06D7BE2F5 /* CorrelationStatisticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF2EFA273168DE93BDDC1DD /* CorrelationStatisticsTests.swift */; };
 		397CA67D3A3C372332F67993 /* ExperimentEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6BBAEA434662BC592A2C2B6 /* ExperimentEngine.swift */; };
 		3D4163DFB197AB572074CCF3 /* CalendarHeatmap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315461430CDF05635146D382 /* CalendarHeatmap.swift */; };
 		3D8E913F6B5E0DBE035AF2A5 /* ReminderNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 280BB927045ABB1AD55D9147 /* ReminderNotificationScheduler.swift */; };
@@ -72,9 +73,11 @@
 		743B7A2DDEADE810AF345F92 /* RoutineEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E2A3229C59C9FFC0DD4FB76 /* RoutineEngine.swift */; };
 		74680F7E4D665A28334FD09F /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B16B0BF6DDAEE7726E7931F /* AppGroup.swift */; };
 		746ACF1CB3F2EDBA3E86251E /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D584A9B27315033A067641 /* Reminder.swift */; };
+		76CD21213066B6EF8530852A /* InsightsEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB83DC08A8581BBB6EF018B1 /* InsightsEngineTests.swift */; };
 		77114BA0873460163741E9DE /* BioTrackWidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA83FD6F5313BF7CD5889FAF /* BioTrackWidgetIntents.swift */; };
 		78AF066E7080F228EC0AAC7A /* Supplement.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF3B858DBB7862AFCE12310 /* Supplement.swift */; };
 		7BD799E6F957486B9C015D85 /* RoutineProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEA68DF4AE577E739180438 /* RoutineProfile.swift */; };
+		85AE35618984E95519EEB06A /* CorrelationStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EE2BEB4B5037EE7D559E7B /* CorrelationStatistics.swift */; };
 		85CB6CF41C70AFB5BE6D80A0 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CAB7F3A403D81BA5A8BC9EF /* TrackView.swift */; };
 		87B48638A0BCA0456260DB80 /* AddSupplementForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D6C9B300E636DA9961DE2A /* AddSupplementForm.swift */; };
 		89089C26E10B78268A4000EF /* StrikethroughCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80F37065C0E51E3C5CDE96AC /* StrikethroughCompat.swift */; };
@@ -129,6 +132,13 @@
 			remoteGlobalIDString = 458A65D4D3A30AB44AF90E8E;
 			remoteInfo = BioTrackWidgetExtension;
 		};
+		C6B92EA1F02453EDABF06F7C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 63CE1027556EA7F5402BC30B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9092B67F1DFD51C1F75F7CA9;
+			remoteInfo = BioTrack;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -156,13 +166,14 @@
 		11ACD8A732224FBECED926F4 /* RoutineProfilesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineProfilesSettingsView.swift; sourceTree = "<group>"; };
 		1262106619C8BBFDB054C4B0 /* Experiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Experiment.swift; sourceTree = "<group>"; };
 		13D9AD416C4DD502B8D42A44 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
-		15541ED2BD2FB71F1F2A3338 /* BioTrackWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BioTrackWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		15541ED2BD2FB71F1F2A3338 /* BioTrackWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BioTrackWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		188D70EF879A07B2B1E5A37E /* View+Compatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Compatibility.swift"; sourceTree = "<group>"; };
 		18E541056A52E477625DCB97 /* SupplementFilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplementFilterSheet.swift; sourceTree = "<group>"; };
 		196A7DCB204BF91EC173C071 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		1AC7303B1D1CCB3BEDA2FE3B /* LocalAnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAnalyticsService.swift; sourceTree = "<group>"; };
 		2087BDE224D715AEA3F2BDDE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		2141DEA8868E4DACF16A83E5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		21EE2BEB4B5037EE7D559E7B /* CorrelationStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorrelationStatistics.swift; sourceTree = "<group>"; };
 		26516585A824CCF6B31DA959 /* BioTrackWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioTrackWidgetExtension.entitlements; sourceTree = "<group>"; };
 		280BB927045ABB1AD55D9147 /* ReminderNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderNotificationScheduler.swift; sourceTree = "<group>"; };
 		286CD5132BB42438658797F6 /* SupplementLibrarySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplementLibrarySheet.swift; sourceTree = "<group>"; };
@@ -182,6 +193,7 @@
 		508A13927F29D14CCE10A970 /* ProtocolLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolLogSheet.swift; sourceTree = "<group>"; };
 		52419208B9B9D80EBBEC810D /* BioTrackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioTrackWidget.swift; sourceTree = "<group>"; };
 		5402D332A7033B006C7949EA /* EditEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEntrySheet.swift; sourceTree = "<group>"; };
+		553D79FF462F5D7CCC2EAD15 /* BioTrackTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BioTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CAB7F3A403D81BA5A8BC9EF /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
 		5D896B7AFF693C1A9B42E818 /* SupplementLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplementLogSheet.swift; sourceTree = "<group>"; };
 		5E32413F926F6E56D5BDB75C /* DailyCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckIn.swift; sourceTree = "<group>"; };
@@ -227,13 +239,15 @@
 		C754F6647247D6EB14A46B60 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		C7933CCB9B30FA1DE6534172 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		CAE3572431504B48FE92258B /* UnifiedCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedCalendarView.swift; sourceTree = "<group>"; };
+		CB83DC08A8581BBB6EF018B1 /* InsightsEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngineTests.swift; sourceTree = "<group>"; };
 		CD708BB488DB5B536F436199 /* ProtocolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolsView.swift; sourceTree = "<group>"; };
 		CF585906E160C168220EA6D4 /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
 		D2FEE371CDAA74F9724A9456 /* ChecklistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChecklistView.swift; sourceTree = "<group>"; };
 		D4401D9BDFDBD224B7F8D120 /* ProtocolFilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolFilterSheet.swift; sourceTree = "<group>"; };
-		D89C2005DA09EB2E1F6DFF55 /* BioTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BioTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D89C2005DA09EB2E1F6DFF55 /* BioTrack.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BioTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA000CCB06E17A9CAFCB7D0F /* FrequencyPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyPickerSheet.swift; sourceTree = "<group>"; };
 		DBD199C7F612976656B2323F /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		DDF2EFA273168DE93BDDC1DD /* CorrelationStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorrelationStatisticsTests.swift; sourceTree = "<group>"; };
 		E00882A4B3428FBA41C9409F /* Metric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metric.swift; sourceTree = "<group>"; };
 		E10D480A003161B27FA3A5E5 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		E5AB1208E48A1DFC590AFAB0 /* SecureBackupEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureBackupEnvelope.swift; sourceTree = "<group>"; };
@@ -242,7 +256,7 @@
 		EDF3B858DBB7862AFCE12310 /* Supplement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supplement.swift; sourceTree = "<group>"; };
 		F2A485580C34A045516B47DA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		F5CF2FC0A51435C78A63AA2A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		F9EE6A999766D19E1D6314AF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F9EE6A999766D19E1D6314AF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FE0E596848DAA75FA490A9D0 /* StreakEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -273,6 +287,7 @@
 			isa = PBXGroup;
 			children = (
 				63052F64695B9AF5C122FD72 /* BioTrack */,
+				456A638363582B91BB6AB164 /* BioTrackTests */,
 				7BD0CF55261CD0875969A5E0 /* BioTrackWidgetExtension */,
 				D70ECFE47E0F14A740CF6DDA /* Frameworks */,
 				386C119F54E71E4E1CD9A7F3 /* Products */,
@@ -301,9 +316,19 @@
 			isa = PBXGroup;
 			children = (
 				D89C2005DA09EB2E1F6DFF55 /* BioTrack.app */,
+				553D79FF462F5D7CCC2EAD15 /* BioTrackTests.xctest */,
 				15541ED2BD2FB71F1F2A3338 /* BioTrackWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		456A638363582B91BB6AB164 /* BioTrackTests */ = {
+			isa = PBXGroup;
+			children = (
+				DDF2EFA273168DE93BDDC1DD /* CorrelationStatisticsTests.swift */,
+				CB83DC08A8581BBB6EF018B1 /* InsightsEngineTests.swift */,
+			);
+			path = BioTrackTests;
 			sourceTree = "<group>";
 		};
 		63052F64695B9AF5C122FD72 /* BioTrack */ = {
@@ -432,6 +457,7 @@
 		EFEBF5EF6332D05D16087D24 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				21EE2BEB4B5037EE7D559E7B /* CorrelationStatistics.swift */,
 				B6BBAEA434662BC592A2C2B6 /* ExperimentEngine.swift */,
 				29BE799AF4375486D0428E90 /* ExportService.swift */,
 				67264C6BC1C5A4F7DB2CDE93 /* FeatureFlags.swift */,
@@ -491,6 +517,24 @@
 			productReference = D89C2005DA09EB2E1F6DFF55 /* BioTrack.app */;
 			productType = "com.apple.product-type.application";
 		};
+		981179CCA80CA79C162AF8C1 /* BioTrackTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6AD5C1E38F9793EFEB8A320A /* Build configuration list for PBXNativeTarget "BioTrackTests" */;
+			buildPhases = (
+				1985816714AECE2D7F4492D3 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B560B540E7AB6E79972EA4C /* PBXTargetDependency */,
+			);
+			name = BioTrackTests;
+			packageProductDependencies = (
+			);
+			productName = BioTrackTests;
+			productReference = 553D79FF462F5D7CCC2EAD15 /* BioTrackTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -498,11 +542,11 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 1430;
 			};
 			buildConfigurationList = 707139CCCC46F3D4C1FA0370 /* Build configuration list for PBXProject "BioTrack" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = fr;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
@@ -511,10 +555,12 @@
 			);
 			mainGroup = 19D15DF4EC75DE7D2E2257D2;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				9092B67F1DFD51C1F75F7CA9 /* BioTrack */,
+				981179CCA80CA79C162AF8C1 /* BioTrackTests */,
 				458A65D4D3A30AB44AF90E8E /* BioTrackWidgetExtension */,
 			);
 		};
@@ -535,6 +581,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1985816714AECE2D7F4492D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				35694DBA8CEDB2C06D7BE2F5 /* CorrelationStatisticsTests.swift in Sources */,
+				76CD21213066B6EF8530852A /* InsightsEngineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6E1A7416917548F5D206379A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -584,6 +639,7 @@
 				B021BDBE5B6401428D0B8DFB /* ChecklistView.swift in Sources */,
 				D8045B92D46C0172F4A75D21 /* ChecklistViewModel.swift in Sources */,
 				1B845F42A01FF583D7928E60 /* ContentView.swift in Sources */,
+				85AE35618984E95519EEB06A /* CorrelationStatistics.swift in Sources */,
 				9166815C0FF60DE0587BBC94 /* CreateMetricSheet.swift in Sources */,
 				55C30F82CACA557B01FD11AA /* DailyCheckIn.swift in Sources */,
 				4DF8FA548092E964ECAB104C /* DailyCheckInSheet.swift in Sources */,
@@ -656,6 +712,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0B560B540E7AB6E79972EA4C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9092B67F1DFD51C1F75F7CA9 /* BioTrack */;
+			targetProxy = C6B92EA1F02453EDABF06F7C /* PBXContainerItemProxy */;
+		};
 		DE54E9C25CCA125B0FAC8EB7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 458A65D4D3A30AB44AF90E8E /* BioTrackWidgetExtension */;
@@ -689,7 +750,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BioTrackWidgetExtension/BioTrackWidgetExtension.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = BioTrackWidgetExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -697,10 +758,28 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		325C2AE8CD1E1DB0FB49D734 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BioTrack.app/BioTrack";
 			};
 			name = Release;
 		};
@@ -708,7 +787,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -740,7 +818,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = X4Z4PH88ZT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -764,7 +841,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -775,7 +851,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BioTrackWidgetExtension/BioTrackWidgetExtension.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = BioTrackWidgetExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -783,10 +859,28 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		788D63003217C158E6FA2483 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BioTrack.app/BioTrack";
 			};
 			name = Debug;
 		};
@@ -794,7 +888,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -826,7 +919,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = X4Z4PH88ZT;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -843,7 +935,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
@@ -856,17 +947,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BioTrack/BioTrack.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X4Z4PH88ZT;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = BioTrack/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Biotrack;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -879,17 +967,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BioTrack/BioTrack.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X4Z4PH88ZT;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = BioTrack/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Biotrack;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fabienlopes.biotrack;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -913,6 +998,15 @@
 			buildConfigurations = (
 				FC0ED5F3A1C4947C27409065 /* Debug */,
 				E08080340A2065B8C9CBEA58 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6AD5C1E38F9793EFEB8A320A /* Build configuration list for PBXNativeTarget "BioTrackTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				788D63003217C158E6FA2483 /* Debug */,
+				325C2AE8CD1E1DB0FB49D734 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

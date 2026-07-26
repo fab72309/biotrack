@@ -202,7 +202,7 @@ struct ProtocolsView: View {
 
     // MARK: - Grouping
     private func groupedProtocols() -> [String: [ProtocolItem]] {
-        var items = filteredProtocols()
+        let items = filteredProtocols()
         var grouped: [String: [ProtocolItem]] = [:]
         for p in items {
             let key = p.category ?? "Autre"

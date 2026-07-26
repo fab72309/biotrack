@@ -1,46 +1,97 @@
 import Foundation
 
 enum InsightsEngine {
+    private struct CorrelationCandidate {
+        let metricA: Metric
+        let metricB: Metric
+        let lag: Int
+        let estimate: CorrelationEstimate
+        var adjustedPValue: Double = 1
+    }
+
     static func generateCorrelationInsights(snapshot: BioTrackSnapshot,
                                             windowDays: Int = 90,
-                                            minSampleSize: Int = 8,
-                                            lags: [Int] = [0, 1, 2]) -> [CorrelationInsight] {
+                                            minSampleSize: Int = 12,
+                                            lags: [Int] = [-2, -1, 0, 1, 2]) -> [CorrelationInsight] {
         let calendar = Calendar.current
-        let end = calendar.startOfDay(for: Date())
-        let start = calendar.date(byAdding: .day, value: -windowDays, to: end) ?? end
+        let today = calendar.startOfDay(for: Date())
+        let endExclusive = calendar.date(byAdding: .day, value: 1, to: today) ?? Date()
+        let start = calendar.date(byAdding: .day, value: -(max(windowDays, 1) - 1), to: today) ?? today
         let metrics = snapshot.metrics
         guard metrics.count >= 2 else { return [] }
 
-        var insights: [CorrelationInsight] = []
+        var candidates: [CorrelationCandidate] = []
         for i in 0..<metrics.count {
             for j in (i + 1)..<metrics.count {
                 let mA = metrics[i]
                 let mB = metrics[j]
-                let mapA = dailyAverageMap(metricId: mA.id, entries: snapshot.metricEntries, start: start, end: end)
-                let mapB = dailyAverageMap(metricId: mB.id, entries: snapshot.metricEntries, start: start, end: end)
+                let mapA = dailyAverageMap(metricId: mA.id, entries: snapshot.metricEntries, start: start, endExclusive: endExclusive)
+                let mapB = dailyAverageMap(metricId: mB.id, entries: snapshot.metricEntries, start: start, endExclusive: endExclusive)
                 for lag in lags {
                     let pairs = alignedPairs(mapA: mapA, mapB: mapB, lagDays: lag)
                     guard pairs.count >= minSampleSize else { continue }
                     let xs = pairs.map { $0.0 }
                     let ys = pairs.map { $0.1 }
-                    let pearsonValue = pearson(xs, ys)
-                    guard !pearsonValue.isNaN else { continue }
-                    let summary = summaryText(metricA: mA.name, metricB: mB.name, pearson: pearsonValue, lag: lag, sample: pairs.count)
-                    insights.append(
-                        CorrelationInsight(
-                            metricAId: mA.id,
-                            metricBId: mB.id,
-                            windowDays: windowDays,
-                            lagDays: lag,
-                            pearson: pearsonValue,
-                            sampleSize: pairs.count,
-                            summary: summary
-                        )
-                    )
+                    guard let estimate = CorrelationStatistics.estimate(x: xs, y: ys) else { continue }
+                    candidates.append(CorrelationCandidate(metricA: mA, metricB: mB, lag: lag, estimate: estimate))
                 }
             }
         }
-        return insights.sorted { abs($0.pearson) > abs($1.pearson) }
+
+        let adjusted = CorrelationStatistics.adjustedPValues(candidates.map(\.estimate.pValue))
+        for index in candidates.indices {
+            candidates[index].adjustedPValue = adjusted[index]
+        }
+
+        let eligible = candidates.filter { candidate in
+            let estimate = candidate.estimate
+            return candidate.adjustedPValue <= 0.10 &&
+                abs(estimate.pearson) >= 0.30 &&
+                abs(estimate.spearman) >= 0.25 &&
+                estimate.confidenceExcludesZero &&
+                estimate.rankAgreementIsAcceptable
+        }
+
+        let grouped = Dictionary(grouping: eligible) {
+            PairKey(first: $0.metricA.id, second: $0.metricB.id)
+        }
+
+        return grouped.values.compactMap { group -> CorrelationInsight? in
+            guard let best = group.max(by: { evidenceScore($0) < evidenceScore($1) }) else { return nil }
+            let estimate = best.estimate
+            let evidence = evidenceLevel(
+                sampleSize: estimate.sampleSize,
+                pearson: estimate.pearson,
+                spearman: estimate.spearman,
+                adjustedPValue: best.adjustedPValue
+            )
+            return CorrelationInsight(
+                metricAId: best.metricA.id,
+                metricBId: best.metricB.id,
+                windowDays: windowDays,
+                lagDays: best.lag,
+                pearson: estimate.pearson,
+                sampleSize: estimate.sampleSize,
+                summary: summaryText(
+                    metricA: best.metricA.name,
+                    metricB: best.metricB.name,
+                    pearson: estimate.pearson,
+                    lag: best.lag,
+                    sample: estimate.sampleSize
+                ),
+                spearman: estimate.spearman,
+                confidenceLower: estimate.confidenceLower,
+                confidenceUpper: estimate.confidenceUpper,
+                adjustedPValue: best.adjustedPValue,
+                evidence: evidence
+            )
+        }
+        .sorted {
+            let left = insightScore($0)
+            let right = insightScore($1)
+            if left == right { return $0.sampleSize > $1.sampleSize }
+            return left > right
+        }
     }
 
     static func adherenceInsights(snapshot: BioTrackSnapshot, days: Int = 14) -> [String] {
@@ -53,7 +104,7 @@ enum InsightsEngine {
 
         for offset in 0..<days {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: now) else { continue }
-            var daySnapshot = DailyPlanner.buildWidgetSnapshot(from: snapshot, now: day)
+            let daySnapshot = DailyPlanner.buildWidgetSnapshot(from: snapshot, now: day)
             let dayDone = daySnapshot.progressDone
             let dayTotal = daySnapshot.progressTotal
             totalDone += dayDone
@@ -83,7 +134,8 @@ enum InsightsEngine {
         let calendar = Calendar.current
         var pairs: [(Double, Double)] = []
         for (day, valueA) in mapA {
-            let keyB = calendar.date(byAdding: .day, value: -lagDays, to: day) ?? day
+            // A positive lag means A is observed before B.
+            let keyB = calendar.date(byAdding: .day, value: lagDays, to: day) ?? day
             if let valueB = mapB[keyB] {
                 pairs.append((valueA, valueB))
             }
@@ -91,12 +143,13 @@ enum InsightsEngine {
         return pairs
     }
 
-    private static func dailyAverageMap(metricId: UUID, entries: [MetricEntry], start: Date, end: Date) -> [Date: Double] {
+    private static func dailyAverageMap(metricId: UUID, entries: [MetricEntry], start: Date, endExclusive: Date) -> [Date: Double] {
         let calendar = Calendar.current
         let filtered = entries.filter {
             $0.metricId == metricId &&
             $0.date >= start &&
-            $0.date <= end
+            $0.date < endExclusive &&
+            $0.value.isFinite
         }
         let grouped = Dictionary(grouping: filtered) { calendar.startOfDay(for: $0.date) }
         var output: [Date: Double] = [:]
@@ -107,35 +160,59 @@ enum InsightsEngine {
         return output
     }
 
-    private static func pearson(_ x: [Double], _ y: [Double]) -> Double {
-        guard x.count == y.count, x.count > 1 else { return .nan }
-        let n = Double(x.count)
-        let sx = x.reduce(0, +)
-        let sy = y.reduce(0, +)
-        let sxx = x.reduce(0) { $0 + $1 * $1 }
-        let syy = y.reduce(0) { $0 + $1 * $1 }
-        let sxy = zip(x, y).reduce(0) { $0 + $1.0 * $1.1 }
-        let num = n * sxy - sx * sy
-        let denLeft = n * sxx - sx * sx
-        let denRight = n * syy - sy * sy
-        guard denLeft > 0, denRight > 0 else { return .nan }
-        return num / sqrt(denLeft * denRight)
-    }
-
     private static func summaryText(metricA: String, metricB: String, pearson: Double, lag: Int, sample: Int) -> String {
         let strength: String
         switch abs(pearson) {
-        case ..<0.2: strength = "très faible"
         case ..<0.4: strength = "faible"
         case ..<0.6: strength = "modérée"
         case ..<0.8: strength = "forte"
         default: strength = "très forte"
         }
-        let direction = pearson >= 0 ? "positive" : "négative"
+        let direction = pearson >= 0 ? "dans le même sens" : "en sens opposé"
         if lag == 0 {
-            return "Corrélation \(strength) \(direction) entre \(metricA) et \(metricB) (\(sample) points)."
+            return "\(metricA) et \(metricB) évoluent \(direction) le même jour. Association \(strength), sur \(sample) jours alignés."
         }
-        return "Corrélation \(strength) \(direction) entre \(metricA) et \(metricB) avec décalage \(lag) jour(s) (\(sample) points)."
+        let earlierMetric = lag > 0 ? metricA : metricB
+        let laterMetric = lag > 0 ? metricB : metricA
+        let dayCount = abs(lag)
+        let dayLabel = dayCount > 1 ? "jours" : "jour"
+        return "\(earlierMetric) précède de \(dayCount) \(dayLabel) des variations \(direction) de \(laterMetric). Association \(strength), sur \(sample) jours alignés."
+    }
+
+    private static func evidenceScore(_ candidate: CorrelationCandidate) -> Double {
+        let estimate = candidate.estimate
+        let conservativeStrength = min(abs(estimate.pearson), abs(estimate.spearman))
+        let confidenceFloor = min(abs(estimate.confidenceLower), abs(estimate.confidenceUpper))
+        let sampleWeight = min(1, Double(estimate.sampleSize) / 30)
+        let lagPenalty = Double(abs(candidate.lag)) * 0.02
+        return conservativeStrength * 0.62 + confidenceFloor * 0.28 + sampleWeight * 0.10 - lagPenalty
+    }
+
+    private static func insightScore(_ insight: CorrelationInsight) -> Double {
+        let rankStrength = abs(insight.spearman ?? insight.pearson)
+        let conservativeStrength = min(abs(insight.pearson), rankStrength)
+        let confidenceFloor = min(abs(insight.confidenceLower ?? 0), abs(insight.confidenceUpper ?? 0))
+        return conservativeStrength * 0.7 + confidenceFloor * 0.3
+    }
+
+    private static func evidenceLevel(
+        sampleSize: Int,
+        pearson: Double,
+        spearman: Double,
+        adjustedPValue: Double
+    ) -> CorrelationEvidence {
+        let conservativeStrength = min(abs(pearson), abs(spearman))
+        if sampleSize >= 30, conservativeStrength >= 0.50, adjustedPValue <= 0.01 {
+            return .strong
+        }
+        if sampleSize >= 20, conservativeStrength >= 0.40, adjustedPValue <= 0.05 {
+            return .moderate
+        }
+        return .exploratory
+    }
+
+    private struct PairKey: Hashable {
+        let first: UUID
+        let second: UUID
     }
 }
-

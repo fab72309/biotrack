@@ -201,18 +201,20 @@ struct SettingsView: View {
                         Text("Objectif max quotidien: \(state.adaptiveGoalPolicy.maxDailyTarget)")
                     }
                 }
-                Section(header: Text("Debug")) {
-                    Button(action: {
-                        let debug = LocalAnalyticsService.exportDebugSummary()
-                        importStatusMessage = debug
-                        showingImportAlert = true
-                    }) {
-                        HStack {
-                            Image(systemName: "doc.text.magnifyingglass")
-                            Text("Voir analytics locales")
+                #if DEBUG
+                    Section(header: Text("Debug")) {
+                        Button(action: {
+                            let debug = LocalAnalyticsService.exportDebugSummary()
+                            importStatusMessage = debug
+                            showingImportAlert = true
+                        }) {
+                            HStack {
+                                Image(systemName: "doc.text.magnifyingglass")
+                                Text("Voir analytics locales")
+                            }
                         }
                     }
-                }
+                #endif
                 Section(header: Text("À propos")) {
                     HStack { Text("Version"); Spacer(); Text(appVersionText).foregroundColor(.secondary) }
                 }

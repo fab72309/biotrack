@@ -29,6 +29,25 @@ public struct CorrelationInsight: Identifiable, Codable, Equatable {
     public var pearson: Double
     public var sampleSize: Int
     public var summary: String
+    public var spearman: Double? = nil
+    public var confidenceLower: Double? = nil
+    public var confidenceUpper: Double? = nil
+    public var adjustedPValue: Double? = nil
+    public var evidence: CorrelationEvidence? = nil
+}
+
+public enum CorrelationEvidence: String, Codable, Equatable {
+    case exploratory
+    case moderate
+    case strong
+
+    public var displayName: String {
+        switch self {
+        case .exploratory: return "À confirmer"
+        case .moderate: return "Signal cohérent"
+        case .strong: return "Signal robuste"
+        }
+    }
 }
 
 public enum RecommendationPriority: String, Codable, CaseIterable, Identifiable {
@@ -48,4 +67,3 @@ public struct RecommendationItem: Identifiable, Codable, Equatable {
     public var reason: String
     public var createdAt: Date = Date()
 }
-

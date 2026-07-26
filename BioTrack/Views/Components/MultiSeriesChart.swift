@@ -7,9 +7,10 @@ struct ChartPoint {
 }
 
 struct ChartSeries: Identifiable {
-	let id = UUID()
+	let id: String
 	let name: String
 	let color: Color
+	let styleIndex: Int
 	let points: [ChartPoint]
 	let rawUnit: String
 	let rawValueFormatter: ((Double) -> String)?
@@ -32,7 +33,12 @@ struct MultiSeriesChart: View {
 	let avgLineValue: Double?
 	let showLegend: Bool
 
-	@State private var hover: (CGPoint, String)? = nil
+	private struct HoverSelection {
+		let point: CGPoint
+		let text: String
+	}
+
+	@State private var hover: HoverSelection? = nil
 
 	var body: some View {
 		GeometryReader { geo in
@@ -40,31 +46,49 @@ struct MultiSeriesChart: View {
 			ZStack {
 				axes(in: rect)
 				Group {
-					if style == .line {
-						ForEach(series) { s in
-							if series.count == 1 { areaPath(s, in: rect).fill(s.color.opacity(0.12)) }
-							splineLinePath(s, in: rect).stroke(s.color, lineWidth: 2)
-							let pts = normalizedPoints(s.points, in: rect)
-							ForEach(Array(pts.enumerated()), id: \.offset) { _, p in
-								Circle().fill(s.color).frame(width: 4, height: 4).position(p)
+						if style == .line {
+							ForEach(series) { s in
+								if series.count == 1 { areaPath(s, in: rect).fill(s.color.opacity(0.12)) }
+								linePath(s, in: rect)
+									.stroke(
+										s.color,
+										style: StrokeStyle(
+											lineWidth: 2.5,
+											lineCap: .round,
+											lineJoin: .round,
+											dash: dashPattern(for: s.styleIndex)
+										)
+									)
+								let pts = normalizedPoints(s.points, in: rect)
+								ForEach(Array(pts.enumerated()), id: \.offset) { _, p in
+									pointSymbol(styleIndex: s.styleIndex, color: s.color)
+										.frame(width: 7, height: 7)
+										.position(p)
+								}
 							}
-						}
 					} else {
 						bars(in: rect)
 					}
 					if let avg = avgLineValue { averageLine(at: avg, in: rect) }
 				}
-				.mask(plotMask(in: rect))
-				if showLegend { legend(in: rect) }
-				if let hover = hover { tooltip(at: hover.0, text: hover.1) }
+					.mask(plotMask(in: rect))
+					if showLegend { legend(in: rect) }
+					if let hover = hover {
+						crosshair(at: hover.point, in: rect)
+						tooltip(at: hover.point, text: hover.text, in: rect)
+					}
 			}
 			.contentShape(Rectangle())
-			.gesture(DragGesture(minimumDistance: 0)
-				.onChanged { value in updateHover(at: value.location, in: rect) }
-				.onEnded { _ in hover = nil }
-			)
+				.gesture(DragGesture(minimumDistance: 0)
+					.onChanged { value in updateHover(at: value.location, in: rect) }
+					.onEnded { _ in hover = nil }
+				)
+				.accessibilityElement(children: .ignore)
+				.accessibilityLabel("Graphique \(series.map(\.name).joined(separator: ", "))")
+				.accessibilityValue(accessibilitySummary)
+				.accessibilityHint("Touchez et faites glisser pour explorer les valeurs.")
+			}
 		}
-	}
 
 	private let leftPadding: CGFloat = 56
 	private let rightPadding: CGFloat = 20 // garde pour éviter chevauchement
@@ -140,27 +164,6 @@ struct MultiSeriesChart: View {
 		return path
 	}
 
-	private func splineLinePath(_ s: ChartSeries, in r: CGRect) -> Path {
-		var path = Path()
-		let pts = normalizedPoints(s.points, in: r)
-		guard pts.count > 0 else { return path }
-		if pts.count < 3 { return linePath(s, in: r) }
-		path.move(to: pts[0])
-		let tension: CGFloat = 0.5 // 0..1 (plus grand = plus lisse)
-		for i in 0..<(pts.count - 1) {
-			let p0 = i == 0 ? pts[i] : pts[i - 1]
-			let p1 = pts[i]
-			let p2 = pts[i + 1]
-			let p3 = (i + 2 < pts.count) ? pts[i + 2] : pts[i + 1]
-			let d1 = CGPoint(x: (p2.x - p0.x) * (tension / 6.0), y: (p2.y - p0.y) * (tension / 6.0))
-			let d2 = CGPoint(x: (p3.x - p1.x) * (tension / 6.0), y: (p3.y - p1.y) * (tension / 6.0))
-			let cp1 = CGPoint(x: p1.x + d1.x, y: p1.y + d1.y)
-			let cp2 = CGPoint(x: p2.x - d2.x, y: p2.y - d2.y)
-			path.addCurve(to: p2, control1: cp1, control2: cp2)
-		}
-		return path
-	}
-
 	private func areaPath(_ s: ChartSeries, in r: CGRect) -> Path {
 		var path = Path()
 		let pts = normalizedPoints(s.points, in: r)
@@ -228,8 +231,8 @@ struct MultiSeriesChart: View {
 		if let t = ticks, let first = t.first, let last = t.last { range = (first, last) }
 		else if let d = dateRange() { range = d } else { range = (fallbackFirst, fallbackLast) }
 		let firstDay = cal.startOfDay(for: range.0)
-		let lastEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.1))! // fin de journée incluse
-		let total = lastEnd.timeIntervalSince1970 - firstDay.timeIntervalSince1970
+		let lastEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.1)) ?? range.1
+		let total = max(lastEnd.timeIntervalSince1970 - firstDay.timeIntervalSince1970, 1)
 		let (minV, maxV) = yRange()
 		let plotWidth = r.width - leftPadding - rightPadding
 		return sorted.map { point in
@@ -242,7 +245,6 @@ struct MultiSeriesChart: View {
 	}
 
 	private func yRange() -> (Double, Double) {
-		if let minF = yMinForced, let maxF = yMaxForced { return (minF, maxF) }
 		let allVals = series.flatMap { $0.points.map(\.displayValue) }
 		let rawMin = allVals.min() ?? 0
 		let rawMax = allVals.max() ?? 1
@@ -258,21 +260,22 @@ struct MultiSeriesChart: View {
 			minV -= padding
 			maxV += padding
 		}
+		if let forcedMinimum = yMinForced { minV = forcedMinimum }
+		if let forcedMaximum = yMaxForced { maxV = forcedMaximum }
 		// éviter NaN et bornes inversées
-		if minV.isNaN || maxV.isNaN || !minV.isFinite || !maxV.isFinite { return (0, 1) }
+		if minV.isNaN || maxV.isNaN || !minV.isFinite || !maxV.isFinite || maxV <= minV { return (0, 1) }
 		return (minV, maxV)
 	}
 
 	private func labelY(_ v: Double) -> String {
 		if let f = valueFormatter { return f(v) }
-		let safe = max(0, v)
 		if yAxisMode == .durationMinutes {
-			let mins = max(0, Int(round(safe)))
+			let mins = max(0, Int(round(v)))
 			let h = mins/60
 			let mm = mins%60
 			return String(format: "%dh%02d", h, mm)
 		}
-		return safe >= 100 ? String(Int(safe.rounded())) : String(format: "%.0f", safe)
+		return abs(v) >= 100 ? String(Int(v.rounded())) : String(format: "%.0f", v)
 	}
 
 	private func averageLine(at value: Double, in r: CGRect) -> some View {
@@ -322,8 +325,8 @@ struct MultiSeriesChart: View {
 	private func xPosition(for d: Date, first: Date, last: Date, width: CGFloat) -> CGFloat {
 		let cal = Calendar.current
 		let firstDay = cal.startOfDay(for: first)
-		let lastEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: last))!
-		let total = lastEnd.timeIntervalSince1970 - firstDay.timeIntervalSince1970
+		let lastEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: last)) ?? last
+		let total = max(lastEnd.timeIntervalSince1970 - firstDay.timeIntervalSince1970, 1)
 		let plotWidth = width - leftPadding - rightPadding
 		let clamped = min(max(d, firstDay), lastEnd)
 		return leftPadding + CGFloat((clamped.timeIntervalSince1970 - firstDay.timeIntervalSince1970)/total) * plotWidth
@@ -346,22 +349,36 @@ struct MultiSeriesChart: View {
 				candidates.append((p, text, dist))
 			}
 		}
-		if let nearest = candidates.min(by: { $0.2 < $1.2 }), nearest.2 < 40 { hover = (nearest.0, nearest.1) } else { hover = nil }
+		if let nearest = candidates.min(by: { $0.2 < $1.2 }), nearest.2 < 44 {
+			hover = HoverSelection(point: nearest.0, text: nearest.1)
+		} else {
+			hover = nil
+		}
 	}
 
-	private func tooltip(at point: CGPoint, text: String) -> some View {
-		VStack(spacing: 4) {
-			Text(text).font(.caption2).multilineTextAlignment(.center).padding(6).background(RoundedRectangle(cornerRadius: 6).fill(Color(UIColor.systemBackground))).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.4), lineWidth: 0.5))
-			Triangle().fill(Color(UIColor.systemBackground)).frame(width: 8, height: 6)
+	private func tooltip(at point: CGPoint, text: String, in rect: CGRect) -> some View {
+		let tooltipWidth = min(max(rect.width - 32, 160), 250)
+		let x = min(max(point.x, tooltipWidth / 2 + 8), rect.width - tooltipWidth / 2 - 8)
+		let y = point.y < 82 ? min(rect.height - bottomPadding - 42, point.y + 54) : point.y - 44
+		return VStack(spacing: 4) {
+			Text(text)
+				.font(.caption.weight(.medium))
+				.multilineTextAlignment(.center)
+				.padding(8)
+				.frame(maxWidth: tooltipWidth)
+				.background(RoundedRectangle(cornerRadius: 10).fill(Color(UIColor.systemBackground)))
+				.overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.35), lineWidth: 0.5))
+				.shadow(color: .black.opacity(0.12), radius: 8, y: 3)
 		}
-		.position(x: point.x, y: max(20, point.y - 24))
+		.position(x: x, y: y)
 	}
 
 	private func legend(in r: CGRect) -> some View {
 		HStack(spacing: 12) {
 			ForEach(series) { s in
 				HStack(spacing: 6) {
-					Circle().fill(s.color).frame(width: 8, height: 8)
+					pointSymbol(styleIndex: s.styleIndex, color: s.color)
+						.frame(width: 8, height: 8)
 					Text(s.name).font(.caption2)
 				}
 			}
@@ -496,15 +513,67 @@ struct MultiSeriesChart: View {
 		}
 		return niceFraction * pow(10, exponent)
 	}
+
+	private func dashPattern(for styleIndex: Int) -> [CGFloat] {
+		switch styleIndex % 3 {
+		case 1: return [8, 4]
+		case 2: return [2, 3]
+		default: return []
+		}
+	}
+
+	@ViewBuilder
+	private func pointSymbol(styleIndex: Int, color: Color) -> some View {
+		switch styleIndex % 3 {
+		case 1:
+			RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+				.fill(color)
+		case 2:
+			Diamond()
+				.fill(color)
+		default:
+			Circle()
+				.fill(color)
+		}
+	}
+
+	private func crosshair(at point: CGPoint, in rect: CGRect) -> some View {
+		Path { path in
+			path.move(to: CGPoint(x: point.x, y: topPadding))
+			path.addLine(to: CGPoint(x: point.x, y: rect.height - bottomPadding))
+		}
+		.stroke(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+	}
+
+	private var accessibilitySummary: String {
+		let summaries = series.compactMap { item -> String? in
+			let sorted = item.points.sorted { $0.date < $1.date }
+			guard let first = sorted.first, let last = sorted.last else { return nil }
+			let firstValue = item.rawValueFormatter?(first.rawValue) ?? String(format: "%.1f", first.rawValue)
+			let lastValue = item.rawValueFormatter?(last.rawValue) ?? String(format: "%.1f", last.rawValue)
+			let direction: String
+			if last.displayValue > first.displayValue {
+				direction = "en hausse"
+			} else if last.displayValue < first.displayValue {
+				direction = "en baisse"
+			} else {
+				direction = "stable"
+			}
+			let unitSuffix = item.rawUnit.isEmpty ? "" : " \(item.rawUnit)"
+			return "\(item.name), \(direction), de \(firstValue)\(unitSuffix) à \(lastValue)\(unitSuffix)"
+		}
+		return summaries.isEmpty ? "Aucune donnée sur la période." : summaries.joined(separator: ". ")
+	}
 }
 
-private struct Triangle: Shape {
+private struct Diamond: Shape {
 	func path(in rect: CGRect) -> Path {
-		var p = Path()
-		p.move(to: CGPoint(x: rect.midX, y: rect.minY))
-		p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-		p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-		p.closeSubpath()
-		return p
+		var path = Path()
+		path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+		path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+		path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+		path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+		path.closeSubpath()
+		return path
 	}
 }

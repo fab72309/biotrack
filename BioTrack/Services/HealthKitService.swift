@@ -173,6 +173,10 @@ final class HealthKitService {
     }
 
     func isAuthorizationError(_ error: Error) -> Bool {
+        Self.isAuthorizationErrorValue(error)
+    }
+
+    private static func isAuthorizationErrorValue(_ error: Error) -> Bool {
         #if canImport(HealthKit)
         guard let hkError = error as? HKError else { return false }
         return hkError.code == .errorAuthorizationDenied || hkError.code == .errorAuthorizationNotDetermined
@@ -207,7 +211,7 @@ final class HealthKitService {
                                       limit: 1,
                                       sortDescriptors: nil) { _, _, error in
                 if let error = error {
-                    continuation.resume(returning: !self.isAuthorizationError(error))
+                    continuation.resume(returning: !Self.isAuthorizationErrorValue(error))
                 } else {
                     continuation.resume(returning: true)
                 }

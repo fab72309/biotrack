@@ -462,7 +462,7 @@ final class AppState: ObservableObject {
 
     func refreshInsightsAndRecommendations(now: Date = Date()) {
         let snapshot = buildSnapshot()
-        correlationInsights = InsightsEngine.generateCorrelationInsights(snapshot: snapshot, windowDays: 90, minSampleSize: 8)
+        correlationInsights = InsightsEngine.generateCorrelationInsights(snapshot: snapshot, windowDays: 90, minSampleSize: 12)
         var nextSnapshot = buildSnapshot()
         nextSnapshot.correlationInsights = correlationInsights
         recommendations = RecommendationEngine.buildRecommendations(snapshot: nextSnapshot, now: now)

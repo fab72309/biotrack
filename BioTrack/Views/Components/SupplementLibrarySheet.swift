@@ -179,6 +179,14 @@ struct SupplementLibrarySheet: View {
         VStack(spacing: 10) {
             searchBar
             categoryChips
+            Label(
+                "Repères documentaires uniquement, pas une posologie. Vérifiez les contre-indications et interactions avec un professionnel de santé.",
+                systemImage: "cross.case"
+            )
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 12)
             ScrollView {
                 LazyVStack(spacing: 10) {
                     ForEach(filteredLibrary) { item in
@@ -376,12 +384,12 @@ private struct LibraryCard: View {
                     }
                 }
             }
-            Text(item.mainDose)
+            Text("Repère publié : \(item.mainDose)")
                 .font(.footnote.weight(.semibold))
-            Text("Plage: \(item.range)")
+            Text("Plage documentaire : \(item.range)")
                 .foregroundColor(.secondary)
             if !item.benefits.isEmpty {
-                Text(item.benefits.joined(separator: " • "))
+                Text("Thèmes étudiés : \(item.benefits.joined(separator: " • "))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -424,4 +432,3 @@ private struct LibraryCard: View {
         }
     }
 }
-

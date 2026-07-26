@@ -1,2 +1,1 @@
 "NSHealthShareUsageDescription" = "BioTrack reads your Health data (sleep, steps, weight, resting heart rate, HRV) to prefill your metrics.";
-"NSHealthUpdateUsageDescription" = "BioTrack may save to the Health app only the data you explicitly choose to share. No data is written without your permission.";

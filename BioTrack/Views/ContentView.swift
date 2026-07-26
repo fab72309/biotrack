@@ -626,7 +626,7 @@ struct LegalNoticeView: View {
                         if let secondaryURL = document.secondaryURL,
                            let secondaryActionKey = document.secondaryActionKey {
                             Link(destination: secondaryURL) {
-                                Label(NSLocalizedString(secondaryActionKey, comment: ""), systemImage: "envelope")
+                                Label(NSLocalizedString(secondaryActionKey, comment: ""), systemImage: "exclamationmark.bubble")
                                     .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
@@ -708,7 +708,9 @@ enum LegalDocument: String, Identifiable {
         case .terms:
             return [
                 "legal.terms.summary.1",
-                "legal.terms.summary.2"
+                "legal.terms.summary.2",
+                "legal.terms.summary.3",
+                "legal.terms.summary.4"
             ]
         }
     }
@@ -747,7 +749,7 @@ enum LegalDocument: String, Identifiable {
     var secondaryURL: URL? {
         switch self {
         case .support:
-            return BioTrackLinks.supportEmail
+            return BioTrackLinks.issueTracker
         default:
             return nil
         }
@@ -755,9 +757,9 @@ enum LegalDocument: String, Identifiable {
 }
 
 enum BioTrackLinks {
-    static let privacyPolicy = URL(string: "https://biotrack.app/privacy-policy.html")!
-    static let support = URL(string: "https://biotrack.app/support.html")!
-    static let supportEmail = URL(string: "mailto:hello@biotrack.app")!
+    static let privacyPolicy = URL(string: "https://fab72309.github.io/biotrack/privacy-policy.html")!
+    static let support = URL(string: "https://fab72309.github.io/biotrack/support.html")!
+    static let issueTracker = URL(string: "https://github.com/fab72309/biotrack/issues/new/choose")!
     static let standardEULA = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 }
 
