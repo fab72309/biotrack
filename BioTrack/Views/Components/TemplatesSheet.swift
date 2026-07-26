@@ -36,46 +36,46 @@ struct ProtocolTemplate: Identifiable {
 }
 
 let protocolTemplateLibrary: [ProtocolTemplate] = [
-    ProtocolTemplate(name: "Jeûne 16/8",
-                     goal: "Améliorer la sensibilité à l'insuline et la clarté mentale",
-                     intervention: "Jeûner 16 h/jour (20h→12h). Hydratation, café/thé non sucré autorisés.",
-                     category: "Métabolisme",
-                     minutes: 10,
-                     frequency: .daily,
-                     hour: 8,
-                     minute: 0),
-    ProtocolTemplate(name: "Respiration Wim Hof",
-                     goal: "Réduire le stress et augmenter l'énergie",
-                     intervention: "3 à 4 cycles de 30-40 respirations profondes + rétention, chaque matin.",
-                     category: "Énergie",
-                     minutes: 15,
-                     frequency: .daily,
-                     hour: 7,
-                     minute: 0),
-    ProtocolTemplate(name: "Exposition au froid",
-                     goal: "Stimuler la noradrénaline et améliorer la récupération",
-                     intervention: "Douche froide 2-3 min à la fin de la douche quotidienne, 4-5x/semaine.",
-                     category: "Récupération",
+    ProtocolTemplate(name: "Pause respiratoire calme",
+                     goal: "Créer un moment de pause",
+                     intervention: "Respirer lentement à votre rythme. Arrêter en cas d’inconfort.",
+                     category: "Bien-être",
                      minutes: 3,
-                     frequency: .weekly(days: [2,4,6]),
-                     hour: 8,
-                     minute: 30),
-    ProtocolTemplate(name: "Pomodoro profond",
-                     goal: "Améliorer la concentration soutenue",
-                     intervention: "4 cycles de 25 min focus + 5 min pause, 1 à 2 fois/jour.",
+                     frequency: .daily,
+                     hour: 10,
+                     minute: 0),
+    ProtocolTemplate(name: "Marche en extérieur",
+                     goal: "Prévoir un temps de mouvement",
+                     intervention: "Marcher à une allure confortable et adaptée à votre situation.",
+                     category: "Mouvement",
+                     minutes: 20,
+                     frequency: .daily,
+                     hour: 12,
+                     minute: 0),
+    ProtocolTemplate(name: "Bloc de concentration",
+                     goal: "Réserver un temps sans interruption",
+                     intervention: "Choisir une tâche, couper les distractions puis faire une pause.",
                      category: "Cognition",
                      minutes: 25,
-                     frequency: .timesPerDay(2),
+                     frequency: .daily,
                      hour: 10,
                      minute: 0),
     ProtocolTemplate(name: "Journal de gratitude",
-                     goal: "Clarté mentale et humeur",
-                     intervention: "Écrire 3 choses positives chaque soir (2 min)",
-                     category: "Cognition",
-                     minutes: 2,
+                     goal: "Prendre du recul sur la journée",
+                     intervention: "Noter librement quelques éléments positifs ou importants.",
+                     category: "Bien-être",
+                     minutes: 5,
                      frequency: .daily,
                      hour: 21,
-                     minute: 30)
+                     minute: 0),
+    ProtocolTemplate(name: "Préparation du coucher",
+                     goal: "Structurer la fin de journée",
+                     intervention: "Préparer le lendemain et choisir une heure de déconnexion.",
+                     category: "Sommeil",
+                     minutes: 10,
+                     frequency: .daily,
+                     hour: 22,
+                     minute: 0)
 ]
 
 struct TemplatesSheet: View {
@@ -106,7 +106,7 @@ struct TemplatesSheet: View {
                         }
                     }
                 }
-                Section(header: Text("Modèles recommandés")) {
+                Section(header: Text("Catalogue de modèles")) {
                     ForEach(filteredTemplates) { t in
                         Button(action: { onSelect(t); dismiss() }) {
                             VStack(alignment: .leading, spacing: 6) {

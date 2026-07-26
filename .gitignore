@@ -59,3 +59,6 @@ fastlane/test_output
 .DS_Store
 *.swp
 *.zip
+
+# Generated App Store release assets
+AppStoreScreenshots/

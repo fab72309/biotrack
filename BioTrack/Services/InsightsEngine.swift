@@ -20,13 +20,29 @@ enum InsightsEngine {
         let metrics = snapshot.metrics
         guard metrics.count >= 2 else { return [] }
 
+        let dailyMaps = Dictionary(
+            uniqueKeysWithValues: metrics.map { metric in
+                (
+                    metric.id,
+                    dailyAverageMap(
+                        metricId: metric.id,
+                        entries: snapshot.metricEntries,
+                        start: start,
+                        endExclusive: endExclusive
+                    )
+                )
+            }
+        )
+
         var candidates: [CorrelationCandidate] = []
         for i in 0..<metrics.count {
             for j in (i + 1)..<metrics.count {
                 let mA = metrics[i]
                 let mB = metrics[j]
-                let mapA = dailyAverageMap(metricId: mA.id, entries: snapshot.metricEntries, start: start, endExclusive: endExclusive)
-                let mapB = dailyAverageMap(metricId: mB.id, entries: snapshot.metricEntries, start: start, endExclusive: endExclusive)
+                guard let mapA = dailyMaps[mA.id],
+                      let mapB = dailyMaps[mB.id] else {
+                    continue
+                }
                 for lag in lags {
                     let pairs = alignedPairs(mapA: mapA, mapB: mapB, lagDays: lag)
                     guard pairs.count >= minSampleSize else { continue }
@@ -118,7 +134,7 @@ enum InsightsEngine {
         if rate < 0.6 {
             lines.append("Votre adhérence sur \(days) jours est faible (\(Int(rate * 100))%). Réduisez la charge quotidienne.")
         } else if rate >= 0.85 {
-            lines.append("Très bonne constance (\(Int(rate * 100))%). Vous pouvez augmenter légèrement vos objectifs.")
+            lines.append("Très bonne constance (\(Int(rate * 100))%). Conservez ce rythme ou ajustez vos objectifs prudemment.")
         }
 
         if let weakest = weekdayCounts

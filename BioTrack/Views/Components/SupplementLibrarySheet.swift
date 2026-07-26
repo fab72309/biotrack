@@ -11,156 +11,67 @@ enum LibraryCategory: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum LibraryStatus: String, Codable {
-    case added = "Ajouté"
-    case add   = "Ajouter"
-}
-
 struct LibrarySupplement: Identifiable, Codable {
     let id: String
     let name: String
-    let mainDose: String
-    let range: String
     let categories: [LibraryCategory]
-    let badges: [String]
-    let benefits: [String]
-    let status: LibraryStatus
-    let note: String?
-    let sources: [String]
 }
 
 let supplementLibrary: [LibrarySupplement] = [
     .init(
         id: "vitD3",
         name: "Vitamine D3",
-        mainDose: "2000 UI",
-        range: "1000–5000 UI",
-        categories: [.vitamins],
-        badges: ["Populaire"],
-        benefits: ["Santé osseuse", "Soutien immunitaire", "Humeur"],
-        status: .added,
-        note: "Disponible chez de nombreux fabricants",
-        sources: ["Endocrine Society 2024", "NIH ODS"]
+        categories: [.vitamins]
     ),
     .init(
         id: "vitB12",
         name: "Vitamine B12",
-        mainDose: "1000 µg",
-        range: "500–2500 µg",
-        categories: [.vitamins],
-        badges: ["Populaire"],
-        benefits: ["Énergie", "Système nerveux", "Globules rouges"],
-        status: .add,
-        note: "Disponible chez de nombreux fabricants",
-        sources: ["NIH ODS", "Guides cliniques carences B12"]
+        categories: [.vitamins]
     ),
     .init(
         id: "vitC",
         name: "Vitamine C",
-        mainDose: "1000 mg",
-        range: "500–2000 mg",
-        categories: [.vitamins],
-        badges: ["Populaire"],
-        benefits: ["Antioxydant", "Immunité", "Collagène"],
-        status: .add,
-        note: "Disponible chez de nombreux fabricants",
-        sources: ["NIH ODS"]
+        categories: [.vitamins]
     ),
     .init(
         id: "mgGly",
         name: "Magnésium (glycinate)",
-        mainDose: "300–400 mg",
-        range: "200–600 mg",
-        categories: [.minerals],
-        badges: ["Populaire"],
-        benefits: ["Relaxation musculaire", "Sommeil", "Stress ↓"],
-        status: .add,
-        note: "Privilégier formes bien tolérées (glycinate/citrate)",
-        sources: ["EFSA/IOM (UL supplément)", "Revue sommeil (ECR variables)"]
+        categories: [.minerals]
     ),
     .init(
         id: "zinc",
         name: "Zinc (picolinate/citrate)",
-        mainDose: "15 mg",
-        range: "8–30 mg",
-        categories: [.minerals],
-        badges: ["Populaire"],
-        benefits: ["Immunité", "Cicatrisation", "Synthèse protéique"],
-        status: .add,
-        note: "Éviter >40 mg/j au long cours (risque cuivre↓)",
-        sources: ["NIH ODS"]
+        categories: [.minerals]
     ),
     .init(
         id: "omega3",
         name: "Oméga-3 (EPA+DHA)",
-        mainDose: "1 g",
-        range: "1–3 g",
-        categories: [.performance],
-        badges: ["Populaire"],
-        benefits: ["Inflammation ↓", "Courbatures (DOMS) ↓", "Triglycérides ↓"],
-        status: .add,
-        note: "Adapter selon apport alimentaire (poissons gras)",
-        sources: ["EFSA/AHA", "Revues DOMS"]
+        categories: [.performance]
     ),
     .init(
         id: "creatine",
         name: "Créatine monohydrate",
-        mainDose: "5 g",
-        range: "3–5 g",
-        categories: [.performance],
-        badges: ["Populaire"],
-        benefits: ["Force/puissance ↑", "Masse maigre ↑", "Cognition (modeste)"],
-        status: .add,
-        note: "Sans phase de charge nécessaire",
-        sources: ["ISSN Position Stand", "Revues 2023–2024"]
+        categories: [.performance]
     ),
     .init(
         id: "theanineCaffeine",
         name: "L-théanine + caféine",
-        mainDose: "200 mg + 100 mg",
-        range: "Théanine 100–200 mg ; Caféine 40–100 mg",
-        categories: [.nootropics],
-        badges: [],
-        benefits: ["Attention/précision ↑", "Jitter ↓ vs caféine seule"],
-        status: .add,
-        note: "Éviter tard (>15 h) si sensibilité sommeil",
-        sources: ["ECR combinés théanine+caféine"]
+        categories: [.nootropics]
     ),
     .init(
         id: "rhodiola",
         name: "Rhodiola rosea (SHR-5)",
-        mainDose: "300 mg",
-        range: "200–400 mg",
-        categories: [.nootropics],
-        badges: [],
-        benefits: ["Fatigue/stress ↓", "Soutien performance (variable)"],
-        status: .add,
-        note: "Standardisation ~3% rosavines / 1% salidroside",
-        sources: ["Revue 2022", "EMA/HMPC monographie"]
+        categories: [.nootropics]
     ),
     .init(
         id: "bacopa",
         name: "Bacopa monnieri (≥45% bacosides)",
-        mainDose: "300 mg",
-        range: "300–450 mg",
-        categories: [.nootropics],
-        badges: [],
-        benefits: ["Mémoire ↑", "Attention ↑ (8–12 sem)"],
-        status: .add,
-        note: "Effets retardés ; qualité d’extrait importante",
-        sources: ["Méta-analyse 2014", "StatPearls"]
+        categories: [.nootropics]
     ),
     .init(
         id: "melatonin",
         name: "Mélatonine",
-        mainDose: "0,5–1 mg",
-        range: "0,5–5 mg",
-        categories: [.sleep],
-        badges: [],
-        benefits: ["Endormissement/jet-lag (modeste)"],
-        status: .add,
-        note: "Usage ponctuel ; AASM prudente en insomnie chronique",
-        sources: ["Cochrane Jet-lag", "AASM"]
+        categories: [.sleep]
     )
 ]
 
@@ -180,7 +91,7 @@ struct SupplementLibrarySheet: View {
             searchBar
             categoryChips
             Label(
-                "Repères documentaires uniquement, pas une posologie. Vérifiez les contre-indications et interactions avec un professionnel de santé.",
+                "Ce catalogue ne recommande aucun produit ni dosage. Ajoutez uniquement les éléments que vous avez choisis et renseignez votre propre produit.",
                 systemImage: "cross.case"
             )
             .font(.caption)
@@ -205,7 +116,7 @@ struct SupplementLibrarySheet: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("Bibliothèque de supplément")
+                Text("Catalogue de suppléments")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -259,7 +170,8 @@ struct SupplementLibrarySheet: View {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return base }
         return base.filter { s in
-            s.name.localizedCaseInsensitiveContains(q) || s.benefits.contains(where: { $0.localizedCaseInsensitiveContains(q) })
+            s.name.localizedCaseInsensitiveContains(q) ||
+                s.categories.contains(where: { $0.rawValue.localizedCaseInsensitiveContains(q) })
         }
     }
 
@@ -297,23 +209,19 @@ struct SupplementLibrarySheet: View {
     @discardableResult
     private func addToUser(_ item: LibrarySupplement) -> Supplement? {
         guard !isAdded(item) else { return nil }
-        // Map library item to app's Supplement model
         let categoryTitle: String = item.categories.first?.rawValue ?? "Autre"
-        let benefitsText = item.benefits.joined(separator: " • ")
-        let note = item.note
-        let combinedNotes = [benefitsText, note].compactMap { $0 }.joined(separator: "\n")
         let newSup = Supplement(
             name: item.name,
             brand: nil,
-            dose: item.mainDose,
+            dose: nil,
             category: categoryTitle,
             timeOfDay: nil,
             timeContext: nil,
             frequency: .daily,
             timesPerDay: nil,
             daysOfWeek: nil,
-            durationNote: "Plage: \(item.range)",
-            notes: combinedNotes.isEmpty ? nil : combinedNotes,
+            durationNote: nil,
+            notes: "Fiche de suivi à personnaliser avec les informations de votre propre produit.",
             active: true
         )
         state.supplements.append(newSup)
@@ -330,7 +238,7 @@ struct SupplementLibrarySheet: View {
     private func defaultReminderData(for name: String) -> ReminderSheet.ReminderData {
         let defaultTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
         return ReminderSheet.ReminderData(
-            title: "Prendre \(name)",
+            title: "Suivi : \(name)",
             time: defaultTime,
             days: Set(1...7),
             description: "",
@@ -384,20 +292,11 @@ private struct LibraryCard: View {
                     }
                 }
             }
-            Text("Repère publié : \(item.mainDose)")
+            Text("Fiche de suivi à personnaliser")
                 .font(.footnote.weight(.semibold))
-            Text("Plage documentaire : \(item.range)")
+            Text("Aucune dose ni bénéfice n’est proposé par BioTrack.")
+                .font(.caption)
                 .foregroundColor(.secondary)
-            if !item.benefits.isEmpty {
-                Text("Thèmes étudiés : \(item.benefits.joined(separator: " • "))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            if let n = item.note {
-                Text(n)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
             HStack {
                 Spacer()
                 if isAdded {

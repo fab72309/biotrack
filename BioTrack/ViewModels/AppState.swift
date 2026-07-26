@@ -42,6 +42,13 @@ final class AppState: ObservableObject {
     private var notificationObservers: [NSObjectProtocol] = []
     
     init() {
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-appStoreScreenshots") {
+            loadAppStoreScreenshotFixture()
+            observeExternalReminderUpdates()
+            return
+        }
+#endif
         load()
         let canRunStartupBootstraps = !SharedStore.lastLoadStatus.recoveredFromCorruption
         if canRunStartupBootstraps && protocols.isEmpty && supplements.isEmpty && metrics.isEmpty {
@@ -93,7 +100,7 @@ final class AppState: ObservableObject {
     
     func save(refreshInsights: Bool = true) {
         if refreshInsights {
-            let insights = InsightsEngine.generateCorrelationInsights(snapshot: buildSnapshot(), windowDays: 90, minSampleSize: 8)
+            let insights = InsightsEngine.generateCorrelationInsights(snapshot: buildSnapshot(), windowDays: 90)
             correlationInsights = insights
             var enriched = buildSnapshot()
             enriched.correlationInsights = insights
@@ -462,7 +469,7 @@ final class AppState: ObservableObject {
 
     func refreshInsightsAndRecommendations(now: Date = Date()) {
         let snapshot = buildSnapshot()
-        correlationInsights = InsightsEngine.generateCorrelationInsights(snapshot: snapshot, windowDays: 90, minSampleSize: 12)
+        correlationInsights = InsightsEngine.generateCorrelationInsights(snapshot: snapshot, windowDays: 90)
         var nextSnapshot = buildSnapshot()
         nextSnapshot.correlationInsights = correlationInsights
         recommendations = RecommendationEngine.buildRecommendations(snapshot: nextSnapshot, now: now)
@@ -719,23 +726,104 @@ final class AppState: ObservableObject {
                                       notes: "Respiration calme",
                                       remindersEnabled: true)
         protocols.append(meditation)
-        
-        let vitD = Supplement(name: "Vitamine D3",
-                              brand: "Nutripure",
-                              dose: "5000 UI",
-                              category: "Vitamines",
-                              timeOfDay: DateComponents(hour: 8, minute: 0),
-                              frequency: .daily,
-                              durationNote: "3 mois",
-                              notes: "Avec repas",
-                              active: true)
-        supplements.append(vitD)
-        
+
         let sleep = Metric(name: "Sommeil", kind: .hoursMinutes, unit: "h")
         let mood = Metric(name: "Humeur", kind: .number, unit: "1-10")
         metrics.append(contentsOf: [sleep, mood])
         routineProfiles = MigrationService.defaultRoutineProfiles()
     }
+
+#if DEBUG
+    private func loadAppStoreScreenshotFixture() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date())
+
+        let meditation = ProtocolItem(
+            name: "Méditation matinale",
+            detail: "10 minutes",
+            frequency: .daily,
+            preferredHour: DateComponents(hour: 7, minute: 0),
+            targetMinutes: 10,
+            notes: "Respiration calme",
+            remindersEnabled: true
+        )
+        let walk = ProtocolItem(
+            name: "Marche en extérieur",
+            detail: "20 minutes",
+            frequency: .daily,
+            preferredHour: DateComponents(hour: 12, minute: 30),
+            targetMinutes: 20,
+            notes: "À adapter selon votre journée",
+            remindersEnabled: false
+        )
+        protocols = [meditation, walk]
+
+        let magnesium = Supplement(
+            name: "Magnésium — suivi personnel",
+            brand: nil,
+            dose: nil,
+            category: "Autre",
+            timeOfDay: DateComponents(hour: 20, minute: 0),
+            frequency: .daily,
+            durationNote: nil,
+            notes: "Exemple visuel, sans recommandation de prise",
+            active: true
+        )
+        supplements = [magnesium]
+
+        let sleep = Metric(name: "Sommeil", kind: .hoursMinutes, unit: "h")
+        let mood = Metric(name: "Humeur", kind: .number, unit: "1-10")
+        let energy = Metric(name: "Énergie", kind: .number, unit: "1-10")
+        let stress = Metric(name: "Stress", kind: .number, unit: "1-10")
+        metrics = [sleep, mood, energy, stress]
+
+        for offset in 0..<35 {
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let rhythm = sin(Double(offset) * 0.61)
+            let recovery = cos(Double(offset) * 0.27) * 0.35
+            let sleepMinutes = 440 + rhythm * 32 + recovery * 20
+            let moodValue = min(10, max(1, 7.1 + rhythm * 1.15 + recovery))
+            let energyValue = min(10, max(1, 7.4 + rhythm * 1.25 + recovery * 0.8))
+            let stressValue = min(10, max(1, 4.2 - rhythm * 1.05 - recovery * 0.6))
+
+            metricEntries.append(MetricEntry(metricId: sleep.id, date: date, value: sleepMinutes))
+            metricEntries.append(MetricEntry(metricId: mood.id, date: date, value: moodValue))
+            metricEntries.append(MetricEntry(metricId: energy.id, date: date, value: energyValue))
+            metricEntries.append(MetricEntry(metricId: stress.id, date: date, value: stressValue))
+
+            if offset % 5 != 0 {
+                protocolCompletions.append(
+                    ProtocolCompletion(protocolId: meditation.id, date: date, completed: true)
+                )
+            }
+            if offset % 3 == 0 {
+                protocolCompletions.append(
+                    ProtocolCompletion(protocolId: walk.id, date: date, completed: true)
+                )
+            }
+            if offset % 4 != 0 {
+                supplementIntakes.append(
+                    SupplementIntake(supplementId: magnesium.id, date: date, taken: true)
+                )
+            }
+        }
+
+        dailyCheckIns = [
+            DailyCheckIn(
+                date: today,
+                period: .morning,
+                energy: 8,
+                mood: 8,
+                sleepQuality: 8,
+                stress: nil,
+                note: "Bonne récupération"
+            )
+        ]
+        routineProfiles = MigrationService.defaultRoutineProfiles()
+        activeRoutineProfileKindRaw = RoutineProfileKind.weekday.rawValue
+        refreshInsightsAndRecommendations(now: today)
+    }
+#endif
 
     private func observeExternalReminderUpdates() {
         let token = NotificationCenter.default.addObserver(

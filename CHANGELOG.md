@@ -18,10 +18,21 @@
 - Garde-fous “bien-être, non médical” ajoutés aux conditions, aux associations et à la bibliothèque de suppléments.
 - Icônes App Store régénérées sans canal alpha.
 - Pages de confidentialité et de support préparées pour GitHub Pages.
+- Catalogue de suppléments rendu neutre : aucune dose, promesse de bénéfice ou
+  recommandation de prise n’est préremplie.
+- Modèles de protocoles à risque remplacés par des routines générales de
+  bien-être et de productivité.
+- Workflow reproductible pour générer les captures App Store iPhone 6,9 pouces.
+- Métadonnées et notes App Review complètes ajoutées au dossier de publication.
 
 ### Corrections
 
 - Les filtres de protocoles et suppléments de l’écran Statistiques agissent désormais sur les séries affichées.
+- Le seuil minimal de douze jours pour les associations est maintenant appliqué
+  de façon identique lors des sauvegardes et des recalculs manuels.
+- Les agrégats journaliers du moteur d’associations ne sont calculés qu’une fois
+  par métrique, ce qui réduit fortement le coût lorsque le nombre de métriques
+  augmente.
 - La période “Tout” s’appuie sur la première donnée disponible au lieu d’une date distante invalide.
 - Les séries utilisent des identifiants stables et les moyennes vides n’affichent plus `0`.
 - Suppression des courbes lissées susceptibles de suggérer des valeurs non mesurées.

@@ -2,6 +2,31 @@ import XCTest
 @testable import BioTrack
 
 final class InsightsEngineTests: XCTestCase {
+    func testDefaultMinimumRejectsElevenAlignedDays() throws {
+        let metricA = Metric(name: "Routine", kind: .number, unit: "score")
+        let metricB = Metric(name: "Énergie", kind: .number, unit: "score")
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date())
+        let firstDay = try XCTUnwrap(calendar.date(byAdding: .day, value: -12, to: today))
+        var entries: [MetricEntry] = []
+
+        for index in 0..<11 {
+            let date = try XCTUnwrap(calendar.date(byAdding: .day, value: index, to: firstDay))
+            let value = Double(index + 1)
+            entries.append(MetricEntry(metricId: metricA.id, date: date, value: value))
+            entries.append(MetricEntry(metricId: metricB.id, date: date, value: value * 3 + 1))
+        }
+
+        let snapshot = BioTrackSnapshot(metrics: [metricA, metricB], metricEntries: entries)
+        XCTAssertTrue(
+            InsightsEngine.generateCorrelationInsights(
+                snapshot: snapshot,
+                windowDays: 90,
+                lags: [0]
+            ).isEmpty
+        )
+    }
+
     func testEngineFindsOneBestLagAndDescribesItsDirection() throws {
         let metricA = Metric(name: "Routine", kind: .number, unit: "score")
         let metricB = Metric(name: "Énergie", kind: .number, unit: "score")

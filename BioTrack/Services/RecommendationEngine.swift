@@ -73,8 +73,8 @@ enum RecommendationEngine {
            (lastEvening.stress ?? 0) >= 8 {
             items.append(
                 RecommendationItem(
-                    title: "Stress élevé détecté",
-                    message: "Planifiez un protocole de récupération ce soir.",
+                    title: "Check-in : stress élevé",
+                    message: "Envisagez d’alléger votre checklist. Si ce ressenti persiste ou vous inquiète, parlez-en à un professionnel.",
                     actionDeepLink: "biotrack://protocols",
                     priority: .high,
                     reason: "stress_high"
