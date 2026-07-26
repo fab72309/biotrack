@@ -1,0 +1,115 @@
+name: App Store screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
+      - name: Capture French iPhone screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          runtime_id="$(
+            xcrun simctl list runtimes --json |
+              jq -r '
+                .runtimes
+                | map(select(.platform == "iOS" and .isAvailable == true))
+                | sort_by(.version | split(".") | map(tonumber))
+                | last
+                | .identifier
+              '
+          )"
+          if [[ -z "$runtime_id" || "$runtime_id" == "null" ]]; then
+            echo "No available iOS simulator runtime"
+            exit 1
+          fi
+
+          device_id="$(
+            xcrun simctl create \
+              "BioTrack App Store" \
+              "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" \
+              "$runtime_id"
+          )"
+
+          cleanup() {
+            xcrun simctl shutdown "$device_id" >/dev/null 2>&1 || true
+            xcrun simctl delete "$device_id" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          xcrun simctl boot "$device_id"
+          xcrun simctl bootstatus "$device_id" -b
+
+          xcodebuild \
+            -project BioTrack.xcodeproj \
+            -scheme BioTrack \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$device_id" \
+            -derivedDataPath "$RUNNER_TEMP/BioTrackDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+          app_path="$RUNNER_TEMP/BioTrackDerivedData/Build/Products/Debug-iphonesimulator/BioTrack.app"
+          test -d "$app_path"
+          xcrun simctl install "$device_id" "$app_path"
+          xcrun simctl status_bar "$device_id" override \
+            --time "9:41" \
+            --batteryState charged \
+            --batteryLevel 100 \
+            --wifiBars 3 \
+            --cellularBars 4
+
+          mkdir -p AppStoreScreenshots/fr-FR
+          xcrun simctl launch "$device_id" com.fabienlopes.biotrack \
+            -appStoreScreenshots \
+            -hasCompletedInitialOnboarding YES \
+            -AppleLanguages "(fr)" \
+            -AppleLocale "fr_FR"
+          sleep 4
+          xcrun simctl io "$device_id" screenshot --type=jpeg \
+            AppStoreScreenshots/fr-FR/01-checklist.jpg
+
+          xcrun simctl openurl "$device_id" biotrack://track
+          sleep 2
+          xcrun simctl io "$device_id" screenshot --type=jpeg \
+            AppStoreScreenshots/fr-FR/02-suivi.jpg
+
+          xcrun simctl openurl "$device_id" biotrack://stats
+          sleep 3
+          xcrun simctl io "$device_id" screenshot --type=jpeg \
+            AppStoreScreenshots/fr-FR/03-statistiques.jpg
+
+          xcrun simctl openurl "$device_id" biotrack://protocols
+          sleep 2
+          xcrun simctl io "$device_id" screenshot --type=jpeg \
+            AppStoreScreenshots/fr-FR/04-protocoles.jpg
+
+          for image in AppStoreScreenshots/fr-FR/*.jpg; do
+            dimensions="$(sips -g pixelWidth -g pixelHeight "$image")"
+            grep -q "pixelWidth: 1320" <<<"$dimensions"
+            grep -q "pixelHeight: 2868" <<<"$dimensions"
+            if sips -g hasAlpha "$image" | grep -q "hasAlpha: yes"; then
+              echo "Screenshot contains an alpha channel: $image"
+              exit 1
+            fi
+          done
+
+      - name: Upload App Store screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: biotrack-app-store-screenshots-fr
+          path: AppStoreScreenshots/fr-FR
+          if-no-files-found: error

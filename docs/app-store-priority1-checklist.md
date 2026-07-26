@@ -1,4 +1,4 @@
-# BioTrack - Priorite 1 (bloquants avant soumission)
+# BioTrack — priorité 1 avant soumission
 
 Ce document couvre les actions a terminer avant une premiere soumission TestFlight externe / App Store.
 
@@ -12,7 +12,15 @@ Les placeholders `com.example.*` ont ete remplaces par:
 
 Si tu veux utiliser un autre namespace (ex. domaine perso / societe), change ces valeurs **avant** de creer les App IDs et profils dans Apple Developer.
 
-## Apple Developer (manuel)
+## Apple Developer
+
+État au 26 juillet 2026 :
+
+- [x] compte Apple présent dans Xcode ;
+- [x] équipe `Fabien LOPES` reconnue avec le rôle Admin ;
+- [ ] accepter le dernier Program License Agreement dans le compte développeur ;
+- [ ] créer ou télécharger un certificat Apple Distribution ;
+- [ ] vérifier les App IDs, l’App Group et les profils après acceptation.
 
 1. Créer l'App Group
 - `group.com.fabienlopes.biotrack`
@@ -47,7 +55,7 @@ Si tu veux utiliser un autre namespace (ex. domaine perso / societe), change ces
 3. Build sur iPhone reel (pas seulement simulateur)
 - verifier HealthKit + widget + notifications
 
-## URLs publiques (manuel, obligatoire pour App Store Connect)
+## URLs publiques
 
 Pages preparees dans `docs/`:
 
@@ -55,17 +63,16 @@ Pages preparees dans `docs/`:
 - `docs/support.html`
 - `docs/index.html`
 
-Actions:
+- [x] politique de confidentialité publiée en HTTPS ;
+- [x] support publié en HTTPS ;
+- [x] page marketing publiée en HTTPS ;
+- [ ] confirmer les coordonnées de contact exigées pour les territoires choisis.
 
-1. Completer les placeholders de contact dans `docs/support.html`
-2. Heberger `docs/` en HTTPS (GitHub Pages / site perso / autre)
-3. Verifier publiquement les URLs:
-   - `https://.../privacy-policy.html`
-   - `https://.../support.html`
+URLs :
 
-Recommande:
-
-- Ajouter aussi `Marketing URL` (`https://.../`)
+- `https://fab72309.github.io/biotrack/privacy-policy.html`
+- `https://fab72309.github.io/biotrack/support.html`
+- `https://fab72309.github.io/biotrack/`
 
 ## App Store Connect - App Privacy (manuel)
 
@@ -98,11 +105,23 @@ Note:
 
 - Ne reponds pas "au hasard". C'est un point de conformite.
 
+## Métadonnées et captures
+
+- [x] textes App Store et notes de revue préparés dans
+  `docs/app-store-metadata-0.2.0.md` ;
+- [x] workflow reproductible de captures iPhone 6,9 pouces ajouté ;
+- [ ] exécuter le workflow et inspecter visuellement les quatre images ;
+- [ ] charger les captures dans App Store Connect ;
+- [ ] renseigner la confidentialité, le classement d’âge et les coordonnées de
+  revue.
+
 ## Definition of done (Priorite 1)
 
 - IDs Apple Developer crees et capabilities actives
 - Signing Xcode OK sur app + widget
 - Privacy Policy URL HTTPS publique fonctionnelle
 - Support URL HTTPS publique fonctionnelle
+- Captures iPhone conformes et inspectées
+- Métadonnées de version renseignées
 - App Privacy renseignee dans App Store Connect
 - Strategie/answers export compliance prepares

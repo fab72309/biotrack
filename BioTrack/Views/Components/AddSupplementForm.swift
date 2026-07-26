@@ -56,19 +56,19 @@ struct AddSupplementForm: View {
 						TextField("Nom du supplément", text: $name)
 					if existing == nil, !supplementSuggestions.isEmpty {
 						VStack(alignment: .leading, spacing: 6) {
-							Text("Suggestions")
+							Text("Correspondances du catalogue")
 								.font(.caption)
 								.foregroundColor(.secondary)
 							ForEach(supplementSuggestions) { suggestion in
 								Button(action: { applySupplementSuggestion(suggestion) }) {
 									HStack(spacing: 10) {
-										Image(systemName: "sparkles")
+										Image(systemName: "list.bullet.rectangle")
 											.font(.caption)
 											.foregroundColor(Color("Primary"))
 											VStack(alignment: .leading, spacing: 2) {
 												Text(suggestion.name)
 													.font(.subheadline.weight(.semibold))
-												Text("\(suggestion.mainDose) • \(suggestion.category)")
+												Text(suggestion.category)
 													.font(.caption)
 													.foregroundColor(.secondary)
 											}
@@ -223,14 +223,16 @@ struct AddSupplementForm: View {
 
 	private func applySupplementSuggestion(_ item: SupplementTemplateItem) {
 		name = item.name
-		if dose.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-			dose = item.mainDose
+		if let suggestedDose = item.mainDose,
+		   dose.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+			dose = suggestedDose
 		}
 		if category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || category == "Autre" {
 			category = item.category
 		}
-		if timeContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-			timeContext = item.defaultTimeContext
+		if let suggestedTimeContext = item.defaultTimeContext,
+		   timeContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+			timeContext = suggestedTimeContext
 		}
 		didSelectTemplate = true
 	}
@@ -297,7 +299,7 @@ struct AddSupplementForm: View {
 
 	private func defaultReminderData() -> ReminderSheet.ReminderData {
 		let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-		let title = trimmedName.isEmpty ? "Prendre ce complément" : "Prendre \(trimmedName)"
+		let title = trimmedName.isEmpty ? "Suivi du complément" : "Suivi : \(trimmedName)"
 		let defaultTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
 		return ReminderSheet.ReminderData(
 			title: title,
@@ -338,10 +340,10 @@ struct AddSupplementForm: View {
 			SupplementTemplateItem(
 				id: "builtin-\($0.id)",
 				name: $0.name,
-				mainDose: $0.mainDose,
+				mainDose: nil,
 				category: $0.categories.first?.rawValue ?? "Autre",
-				detail: $0.benefits.first ?? $0.range,
-				defaultTimeContext: "Avec le repas",
+				detail: "Fiche neutre à personnaliser",
+				defaultTimeContext: nil,
 				isUserDefined: false
 			)
 		}
@@ -350,10 +352,10 @@ struct AddSupplementForm: View {
 			SupplementTemplateItem(
 				id: "custom-\(template.id.uuidString)",
 				name: template.name,
-				mainDose: template.dose ?? "Dose personnalisée",
+				mainDose: template.dose,
 				category: template.category,
 				detail: template.brand ?? "Modèle personnalisé",
-				defaultTimeContext: template.timeContext ?? "Avec le repas",
+				defaultTimeContext: template.timeContext,
 				isUserDefined: true
 			)
 		}
@@ -371,10 +373,10 @@ struct AddSupplementForm: View {
 private struct SupplementTemplateItem: Identifiable {
 	let id: String
 	let name: String
-	let mainDose: String
+	let mainDose: String?
 	let category: String
 	let detail: String
-	let defaultTimeContext: String
+	let defaultTimeContext: String?
 	let isUserDefined: Bool
 }
 
@@ -390,7 +392,7 @@ private struct SupplementTemplatesSheet: View {
 				Section {
 					SearchField(placeholder: "Rechercher un complément...", text: $searchText)
 				}
-					Section(header: Text("Compléments recommandés")) {
+					Section(header: Text("Catalogue et modèles")) {
 						ForEach(filteredSupplements) { item in
 							Button(action: { onSelect(item); dismiss() }) {
 								VStack(alignment: .leading, spacing: 6) {
@@ -408,8 +410,11 @@ private struct SupplementTemplatesSheet: View {
 										}
 									}
 									HStack(spacing: 8) {
-										Text(item.mainDose)
-										Text("• \(item.category)")
+										if let mainDose = item.mainDose {
+											Text(mainDose)
+											Text("•")
+										}
+										Text(item.category)
 									}
 									.font(.caption)
 									.foregroundColor(.secondary)
@@ -447,10 +452,10 @@ private struct SupplementTemplatesSheet: View {
 			SupplementTemplateItem(
 				id: "builtin-\(item.id)",
 				name: item.name,
-				mainDose: item.mainDose,
+				mainDose: nil,
 				category: item.categories.first?.rawValue ?? "Autre",
-				detail: item.benefits.first ?? item.range,
-				defaultTimeContext: "Avec le repas",
+				detail: "Fiche neutre à personnaliser",
+				defaultTimeContext: nil,
 				isUserDefined: false
 			)
 		}
@@ -459,10 +464,10 @@ private struct SupplementTemplatesSheet: View {
 			SupplementTemplateItem(
 				id: "custom-\(template.id.uuidString)",
 				name: template.name,
-				mainDose: template.dose ?? "Dose personnalisée",
+				mainDose: template.dose,
 				category: template.category,
 				detail: template.brand ?? "Modèle personnalisé",
-				defaultTimeContext: template.timeContext ?? "Avec le repas",
+				defaultTimeContext: template.timeContext,
 				isUserDefined: true
 			)
 		}
