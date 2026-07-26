@@ -52,9 +52,26 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER="" \
             build | tee build.log
 
+      - name: Test correlation engine
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project BioTrack.xcodeproj \
+            -scheme BioTrack \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            test | tee test.log
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xcodebuild-log
-          path: build.log
+          path: |
+            build.log
+            test.log

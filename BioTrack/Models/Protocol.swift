@@ -32,3 +32,14 @@ public struct ProtocolCompletion: Identifiable, Codable, Equatable {
     public var date: Date
     public var completed: Bool
 }
+
+public struct CustomProtocolTemplate: Identifiable, Codable, Equatable {
+    public var id: UUID = UUID()
+    public var name: String
+    public var detail: String?
+    public var category: String
+    public var minutes: Int
+    public var frequency: Frequency
+    public var hour: Int
+    public var minute: Int
+}

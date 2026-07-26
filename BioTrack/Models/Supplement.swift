@@ -25,3 +25,13 @@ public struct SupplementIntake: Identifiable, Codable, Equatable {
     public var date: Date
     public var taken: Bool
 }
+
+public struct CustomSupplementTemplate: Identifiable, Codable, Equatable {
+    public var id: UUID = UUID()
+    public var name: String
+    public var brand: String?
+    public var dose: String?
+    public var category: String
+    public var timeContext: String?
+    public var frequency: Frequency
+}

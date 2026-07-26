@@ -18,6 +18,7 @@ struct StatsView: View {
     @State private var grouping: Grouping = .metrics
     enum ChartStyle { case line, bar }
     @State private var chartStyle: ChartStyle = .line
+    @State private var showingExperimentWizard = false
     
     var body: some View {
         NavigationView {
@@ -27,38 +28,55 @@ struct StatsView: View {
                     selectMetricCard
                     timeAndFilters
                     mainPanel
+                    correlationsPanel
+                    experimentsPanel
                 }
                 .padding()
             }
             .navigationTitle("Statistiques")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showingExperimentWizard = true }) {
+                        Label("N-of-1", systemImage: "flask")
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showTrackSheet) { TrackView().environmentObject(state).withSheetDetentsIfAvailable() }
+        .sheet(isPresented: $showingExperimentWizard) {
+            NOf1WizardSheet(metrics: state.metrics) { input in
+                state.createExperiment(input: input)
+            }
+            .withSheetDetentsIfAvailable()
+        }
         .onAppear {
-            if selectedMetric == nil { selectedMetric = metricsWithData().first }
+            if selectedMetric == nil {
+                selectedMetric = metricsForSelection().first(where: { hasData(for: $0) }) ?? metricsForSelection().first
+            }
             if selectedMetricIds.isEmpty, let first = selectedMetric { selectedMetricIds = [first.id] }
+            state.refreshInsightsAndRecommendations()
         }
     }
 
     private var header: some View {
-        HStack {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Visualisez l'évolution de vos données")
                 .foregroundColor(.secondary)
-            Spacer()
             Picker("", selection: $mode) {
                 Label("Graphique", systemImage: "chart.bar").tag(Mode.chart)
                 Label("Calendrier", systemImage: "calendar").tag(Mode.calendar)
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 280)
+            .accessibilityLabel("Mode d’affichage")
         }
     }
 
     private var selectMetricCard: some View {
         SurfaceCard {
             Text("Sélectionner une métrique").font(.headline)
-            if metricsWithData().isEmpty {
+            if metricsForSelection().isEmpty {
                 VStack(spacing: 12) {
-                    Text("Aucune métrique avec des données").foregroundColor(.secondary)
+                    Text("Aucune métrique disponible").foregroundColor(.secondary)
                     Button(action: { showTrackSheet = true }) { Label("Ajouter des données", systemImage: "plus") }
                         .buttonStyle(.borderedProminent).tint(Color("Primary"))
                 }
@@ -67,25 +85,39 @@ struct StatsView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(metricsWithData()) { m in
+                        ForEach(metricsForSelection()) { m in
                             let isSelected = selectedMetricIds.contains(m.id)
+                            let label = hasData(for: m) ? m.name : "\(m.name) · vide"
                             SelectableChip(
-                                title: m.name,
+                                title: label,
                                 selected: isSelected,
                                 iconSystemName: nil,
                                 tintColor: nil,
                                 selectedBackgroundColor: Color(UIColor.secondarySystemBackground),
                                 selectedForegroundColor: Color("Primary")
                             ) {
-                                if isSelected { selectedMetricIds.remove(m.id) }
-                                else if selectedMetricIds.count < 3 { selectedMetricIds.insert(m.id) }
-                                if selectedMetric == nil { selectedMetric = m }
+                                if isSelected {
+                                    if selectedMetricIds.count > 1 {
+                                        selectedMetricIds.remove(m.id)
+                                        if selectedMetric?.id == m.id {
+                                            selectedMetric = metricsForSelection().first {
+                                                selectedMetricIds.contains($0.id)
+                                            }
+                                        }
+                                    }
+                                } else if selectedMetricIds.count < 3 {
+                                    selectedMetricIds.insert(m.id)
+                                    selectedMetric = m
+                                }
                             }
                             .opacity(isSelected || selectedMetricIds.count < 3 ? 1.0 : 0.5)
                             .disabled(!isSelected && selectedMetricIds.count >= 3)
                         }
                     }
                 }
+                Text("Les métriques marquées “vide” n'ont pas encore de donnée enregistrée.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -99,25 +131,42 @@ struct StatsView: View {
                 SelectableChip(title: "90j", selected: range == .d90) { range = .d90 }
                 SelectableChip(title: "Tout", selected: range == .all) { range = .all }
             }
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading) {
-                    Text("Protocole").font(.headline)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            SelectableChip(title: "Aucun", selected: selectedProtocolId == nil) { selectedProtocolId = nil }
-                            ForEach(state.protocols) { p in
-                                SelectableChip(title: p.name, selected: selectedProtocolId == p.id) { selectedProtocolId = p.id }
+            Text("Données affichées").font(.headline)
+            Picker("Données affichées", selection: $grouping) {
+                Text("Métriques").tag(Grouping.metrics)
+                Text("Protocoles").tag(Grouping.protocols)
+                Text("Suppléments").tag(Grouping.supplements)
+            }
+            .pickerStyle(.segmented)
+
+            if grouping == .protocols {
+                Text("Filtrer les protocoles").font(.subheadline.weight(.semibold))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        SelectableChip(title: "Tous", selected: selectedProtocolId == nil) { selectedProtocolId = nil }
+                        ForEach(state.protocols) { protocolItem in
+                            SelectableChip(
+                                title: protocolItem.name,
+                                selected: selectedProtocolId == protocolItem.id
+                            ) {
+                                selectedProtocolId = selectedProtocolId == protocolItem.id ? nil : protocolItem.id
                             }
                         }
                     }
                 }
-                VStack(alignment: .leading) {
-                    Text("Supplément").font(.headline)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            SelectableChip(title: "Aucun", selected: selectedSupplementId == nil) { selectedSupplementId = nil }
-                            ForEach(state.supplements) { s in
-                                SelectableChip(title: s.name, selected: selectedSupplementId == s.id) { selectedSupplementId = s.id }
+            }
+
+            if grouping == .supplements {
+                Text("Filtrer les suppléments").font(.subheadline.weight(.semibold))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        SelectableChip(title: "Tous", selected: selectedSupplementId == nil) { selectedSupplementId = nil }
+                        ForEach(state.supplements) { supplement in
+                            SelectableChip(
+                                title: supplement.name,
+                                selected: selectedSupplementId == supplement.id
+                            ) {
+                                selectedSupplementId = selectedSupplementId == supplement.id ? nil : supplement.id
                             }
                         }
                     }
@@ -130,59 +179,241 @@ struct StatsView: View {
         Group {
             if let m = selectedMetric {
                 if mode == .chart {
-                    VStack(alignment: .leading, spacing: 12) {
+                    SurfaceCard {
                         HStack {
-                            Picker("", selection: $grouping) {
-                                Text("Métriques").tag(Grouping.metrics)
-                                Text("Protocoles").tag(Grouping.protocols)
-                                Text("Suppléments").tag(Grouping.supplements)
-                            }.pickerStyle(.segmented)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(chartSectionTitle)
+                                    .font(.headline)
+                                Text(periodDescription)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                             Spacer()
-                            Picker("", selection: $chartStyle) {
+                            Picker("Type de graphique", selection: $chartStyle) {
                                 Image(systemName: "waveform.path.ecg").tag(ChartStyle.line)
                                 Image(systemName: "chart.bar").tag(ChartStyle.bar)
-                            }.pickerStyle(.segmented).frame(maxWidth: 120)
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(maxWidth: 120)
                         }
-                        // Use type defined in separate file; ensure symbol is visible by having same module
                         let metricsList = metricsListForDisplay(baseMetric: m)
                         let primaryMetric = metricsList.first ?? m
-                        let series = buildSeries(from: metricsList)
-                        VStack(spacing: 8) {
-                            // Légende au-dessus du graphique
-                            legendRow(series: series)
-                            MultiSeriesChart(series: series,
-                                         style: chartStyle,
-                                         unit: unitLabel(baseMetric: primaryMetric),
-                                         ticks: customTicks(),
-                                         yMinForced: forcedYRange(for: primaryMetric, series: series).0,
-                                         yMaxForced: forcedYRange(for: primaryMetric, series: series).1,
-                                         valueFormatter: valueFormatterForMetric(primaryMetric),
-                                         avgLineValue: averageValue(for: primaryMetric, series: series),
-                                         showLegend: false)
-                            .frame(height: 300)
-                            .padding(.vertical, 6)
-                            .padding(.bottom, 16) // éviter chevauchement avec "Moyenne sur la période"
-                            averageRow(for: primaryMetric, series: series)
-                        }
-                        HStack {
-                            Spacer()
-                            Button("Exporter CSV") {
-                            let csv = ExportService.csvMetrics(metrics: state.metrics, entries: filteredEntries(for: m))
-                            share(text: csv)
+                        let isNormalizedComparison = shouldNormalizeMetricsComparison(metricsList: metricsList)
+                        let series = buildSeries(from: metricsList, normalizeMetrics: isNormalizedComparison)
+                        let forcedRange = isNormalizedComparison
+                        ? (0.0 as Double?, 100.0 as Double?)
+                        : forcedYRange(for: primaryMetric, series: series)
+
+                        if series.allSatisfy({ $0.points.isEmpty }) {
+                            EmptyStateView(
+                                text: "Aucune donnée sur cette période avec les filtres sélectionnés.",
+                                systemImageName: "chart.line.uptrend.xyaxis"
+                            )
+                            .frame(maxWidth: .infinity, minHeight: 220)
+                        } else {
+                            VStack(spacing: 8) {
+                                legendRow(series: series)
+                                MultiSeriesChart(
+                                    series: series,
+                                    style: chartStyle,
+                                    unit: isNormalizedComparison ? "Indice (0-100)" : unitLabel(baseMetric: primaryMetric),
+                                    yAxisMode: yAxisMode(for: primaryMetric, isNormalizedComparison: isNormalizedComparison),
+                                    ticks: customTicks(),
+                                    yMinForced: forcedRange.0,
+                                    yMaxForced: forcedRange.1,
+                                    valueFormatter: isNormalizedComparison ? nil : valueFormatterForMetric(primaryMetric),
+                                    avgLineValue: isNormalizedComparison ? nil : averageValue(for: primaryMetric, series: series),
+                                    showLegend: false
+                                )
+                                .frame(height: 300)
+                                .padding(.vertical, 6)
+                                .padding(.bottom, 12)
+                                averageRow(for: primaryMetric, series: series)
                             }
-                            .buttonStyle(.bordered)
+                            if grouping == .metrics {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        let csv = ExportService.csvMetrics(
+                                            metrics: state.metrics,
+                                            entries: metricsList.flatMap { filteredEntries(for: $0) }
+                                        )
+                                        share(text: csv)
+                                    } label: {
+                                        Label("Exporter CSV", systemImage: "square.and.arrow.up")
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            }
                         }
                     }
                 } else {
                     let (start, end) = dateBounds()
-                    CalendarHeatmap(entries: filteredEntries(for: m), startDate: start, endDate: end)
-                        .frame(height: 320)
-                        .padding()
+                    VStack(alignment: .leading, spacing: 12) {
+                        SurfaceCard {
+                            UnifiedCalendarView(days: rangeDays)
+                                .environmentObject(state)
+                        }
+                        SurfaceCard {
+                            Text("Heatmap métrique").font(.headline)
+                            CalendarHeatmap(entries: filteredEntries(for: m), startDate: start, endDate: end)
+                                .frame(height: 300)
+                        }
+                    }
                 }
             } else {
                 SurfaceCard {
                     EmptyStateView(text: "Choisissez une métrique pour afficher les données", systemImageName: "chart.bar")
                         .frame(maxWidth: .infinity, minHeight: 180)
+                }
+            }
+        }
+    }
+
+    private var correlationsPanel: some View {
+        SurfaceCard {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Associations entre métriques").font(.headline)
+                    Text("Analyse locale sur les 90 derniers jours")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button { state.refreshInsightsAndRecommendations() } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Recalculer les associations")
+            }
+            Label(
+                "Une association aide à formuler une hypothèse, mais ne prouve jamais qu’une métrique en cause une autre.",
+                systemImage: "info.circle"
+            )
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if state.correlationInsights.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    Text("Aucun signal suffisamment étayé")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Enregistrez au moins 12 jours communs pour deux métriques. BioTrack écarte les résultats instables et corrige les comparaisons multiples.")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+            } else {
+                ForEach(Array(state.correlationInsights.prefix(6)).indices, id: \.self) { index in
+                    if index > 0 {
+                        Divider()
+                    }
+                    correlationRow(state.correlationInsights[index])
+                }
+            }
+        }
+    }
+
+    private func correlationRow(_ insight: CorrelationInsight) -> some View {
+        let evidence = insight.evidence ?? .exploratory
+        let color = evidenceColor(evidence)
+        let spearman = insight.spearman ?? insight.pearson
+        let interval = confidenceIntervalText(insight)
+
+        return VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(correlationTitle(insight))
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Text(evidence.displayName)
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(color.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+            Text(insight.summary)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            CorrelationBar(value: insight.pearson, color: color)
+                .frame(height: 18)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    correlationStat("Pearson r", value: String(format: "%.2f", insight.pearson))
+                    correlationStat("Rang ρ", value: String(format: "%.2f", spearman))
+                    correlationStat("Jours", value: "\(insight.sampleSize)")
+                    correlationStat("IC 95 %", value: interval)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func correlationStat(_ label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.caption.monospacedDigit().weight(.semibold))
+        }
+    }
+
+    private var experimentsPanel: some View {
+        SurfaceCard {
+            HStack {
+                Text("Expériences N-of-1").font(.headline)
+                Spacer()
+                Button("Nouveau") { showingExperimentWizard = true }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color("Primary"))
+            }
+            if state.experiments.isEmpty {
+                Text("Aucune expérience en cours.")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(state.experiments) { experiment in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(experiment.title).font(.subheadline.weight(.semibold))
+                        Text(experiment.hypothesis).font(.caption).foregroundColor(.secondary)
+                        HStack {
+                            Button("Log aujourd'hui") {
+                                logObservationToday(for: experiment)
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                            Spacer()
+                            Text(experiment.status.rawValue.capitalized)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        if let summary = state.experimentSummary(experimentId: experiment.id),
+                           let control = summary.controlAverage,
+                           let intervention = summary.interventionAverage {
+                            Text(String(format: "%@: %.2f • %@: %.2f • Δ %.2f",
+                                        experiment.controlLabel, control,
+                                        experiment.interventionLabel, intervention,
+                                        summary.delta ?? 0))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("En attente de mesures.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
         }
@@ -198,16 +429,24 @@ struct StatsView: View {
                 ForEach(series) { s in
                     let m = state.metrics.first(where: { $0.name == s.name }) ?? metric
                     let vals = filteredEntries(for: m).map { $0.value }
-                    let avg = (vals.reduce(0, +) / max(Double(vals.count), 1))
                     HStack(spacing: 6) {
-                        Circle().fill(s.color).frame(width: 8, height: 8)
-                        Text("\(m.name): \(formatValue(avg, for: m))")
+                        legendSymbol(for: s)
+                        if vals.isEmpty {
+                            Text("\(m.name): —")
+                        } else {
+                            let avg = vals.reduce(0, +) / Double(vals.count)
+                            Text("\(m.name): \(formatValue(avg, for: m))")
+                        }
                     }.font(.subheadline.weight(.semibold))
                 }
             case .protocols, .supplements:
-                let all = series.flatMap { $0.points.map { $0.1 } }
-                let avg = (all.reduce(0, +) / max(Double(all.count), 1))
-                Text(String(format: "%.1f / jour", avg)).font(.subheadline.weight(.semibold))
+                let all = series.flatMap { $0.points.map(\.displayValue) }
+                if all.isEmpty {
+                    Text("—").font(.subheadline.weight(.semibold))
+                } else {
+                    let avg = all.reduce(0, +) / Double(all.count)
+                    Text(String(format: "%.1f / jour", avg)).font(.subheadline.weight(.semibold))
+                }
             }
         }
     }
@@ -231,60 +470,64 @@ struct StatsView: View {
             guard !vals.isEmpty else { return nil }
             return vals.reduce(0, +) / Double(vals.count)
         case .protocols, .supplements:
-            let all = series.flatMap { $0.points.map { $0.1 } }
+            let all = series.flatMap { $0.points.map(\.displayValue) }
             guard !all.isEmpty else { return nil }
             return all.reduce(0, +) / Double(all.count)
         }
     }
 
-    private func rangeChip(_ title: String, _ value: Range) -> some View {
-        Button(action: { range = value }) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(range == value ? Color("Primary") : Color(UIColor.secondarySystemBackground))
-                .foregroundColor(range == value ? Color("OnPrimary") : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }.buttonStyle(.plain)
-    }
-    private func filterChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(isSelected ? Color("Primary") : Color(UIColor.secondarySystemBackground))
-                .foregroundColor(isSelected ? Color("OnPrimary") : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }.buttonStyle(.plain)
+    private func metricsForSelection() -> [Metric] {
+        state.metrics.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 
-    private func metricsWithData() -> [Metric] {
-        let ids = Set(state.metricEntries.map { $0.metricId })
-        return state.metrics.filter { ids.contains($0.id) }
+    private func hasData(for metric: Metric) -> Bool {
+        state.metricEntries.contains(where: { $0.metricId == metric.id })
     }
     private func filteredEntries(for metric: Metric) -> [MetricEntry] {
-        var entries = state.metricEntries.filter { $0.metricId == metric.id }
+        var entries = state.metricEntries.filter { $0.metricId == metric.id && $0.value.isFinite }
         let cal = Calendar.current
         switch range {
         case .d7:
-            entries = entries.filter { $0.date >= cal.date(byAdding: .day, value: -7, to: Date())! }
+            if let start = cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: Date())) {
+                entries = entries.filter { $0.date >= start }
+            }
         case .d30:
-            entries = entries.filter { $0.date >= cal.date(byAdding: .day, value: -30, to: Date())! }
+            if let start = cal.date(byAdding: .day, value: -29, to: cal.startOfDay(for: Date())) {
+                entries = entries.filter { $0.date >= start }
+            }
         case .d90:
-            entries = entries.filter { $0.date >= cal.date(byAdding: .day, value: -90, to: Date())! }
+            if let start = cal.date(byAdding: .day, value: -89, to: cal.startOfDay(for: Date())) {
+                entries = entries.filter { $0.date >= start }
+            }
         case .all:
             break
         }
         return entries.sorted { $0.date < $1.date }
     }
 
+    private func dailyAverageEntries(_ entries: [MetricEntry]) -> [MetricEntry] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: entries) { calendar.startOfDay(for: $0.date) }
+        return grouped.compactMap { day, dayEntries in
+            guard !dayEntries.isEmpty else { return nil }
+            let average = dayEntries.map(\.value).reduce(0, +) / Double(dayEntries.count)
+            return MetricEntry(
+                metricId: dayEntries[0].metricId,
+                date: day,
+                value: average,
+                notes: nil
+            )
+        }
+        .sorted { $0.date < $1.date }
+    }
+
     // MARK: - Series building
     private func unitLabel(baseMetric: Metric) -> String {
         switch grouping {
         case .metrics: return baseMetric.unit ?? ""
-        case .protocols, .supplements: return "occurrences"
+        case .protocols, .supplements: return "fois / jour"
         }
     }
 
@@ -299,7 +542,53 @@ struct StatsView: View {
         }
     }
 
-    private func buildSeries(from metricsList: [Metric]) -> [ChartSeries] {
+    private func shouldNormalizeMetricsComparison(metricsList: [Metric]) -> Bool {
+        guard grouping == .metrics, metricsList.count >= 2 else { return false }
+        let compatibilityKeys = Set(metricsList.map(metricCompatibilityKey))
+        return compatibilityKeys.count > 1
+    }
+
+    private func metricCompatibilityKey(_ metric: Metric) -> String {
+        switch metric.kind {
+        case .hoursMinutes:
+            return "duration_minutes"
+        case .number:
+            return "number:\(normalizedUnit(metric.unit))"
+        }
+    }
+
+    private func normalizedUnit(_ unit: String?) -> String {
+        guard let unit else { return "" }
+        return unit
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: " ", with: "")
+            .lowercased()
+    }
+
+    private func yAxisMode(for baseMetric: Metric, isNormalizedComparison: Bool) -> MultiSeriesChart.YAxisMode {
+        guard !isNormalizedComparison else { return .numeric }
+        switch grouping {
+        case .metrics:
+            let normalizedName = baseMetric.name
+                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                .lowercased()
+            return (baseMetric.kind == .hoursMinutes || normalizedName.contains("sommeil")) ? .durationMinutes : .numeric
+        case .protocols, .supplements:
+            return .numeric
+        }
+    }
+
+    private func tooltipUnit(for metric: Metric) -> String {
+        let normalizedName = metric.name
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+        if metric.kind == .hoursMinutes || normalizedName.contains("sommeil") {
+            return ""
+        }
+        return metric.unit ?? ""
+    }
+
+    private func buildSeries(from metricsList: [Metric], normalizeMetrics: Bool) -> [ChartSeries] {
         let cal = Calendar.current
         let startDate = dateBounds().0
 
@@ -307,29 +596,80 @@ struct StatsView: View {
         case .metrics:
             let palette = colorPalette()
             return metricsList.enumerated().map { idx, m in
-                let points = filteredEntries(for: m).map { ($0.date, $0.value) }
-                return ChartSeries(name: m.name, color: palette[idx % palette.count], points: points)
+                let entries = dailyAverageEntries(filteredEntries(for: m))
+                let rawValues = entries.map(\.value)
+                let minRaw = rawValues.min() ?? 0
+                let maxRaw = rawValues.max() ?? 0
+                let points = entries.map { entry -> ChartPoint in
+                    let raw = entry.value
+                    let display: Double
+                    if normalizeMetrics {
+                        if abs(maxRaw - minRaw) < 1e-6 {
+                            display = 50
+                        } else {
+                            display = ((raw - minRaw) / (maxRaw - minRaw)) * 100
+                        }
+                    } else {
+                        display = raw
+                    }
+                    return ChartPoint(date: entry.date, displayValue: display, rawValue: raw)
+                }
+                return ChartSeries(
+                    id: m.id.uuidString,
+                    name: m.name,
+                    color: palette[idx % palette.count],
+                    styleIndex: idx,
+                    points: points,
+                    rawUnit: tooltipUnit(for: m),
+                    rawValueFormatter: valueFormatterForMetric(m)
+                )
             }
         case .protocols:
             // construire une série 0/1 par protocole selon complétions (uniquement quand actif à la date)
             let ids = Set(state.protocolCompletions.map { $0.protocolId })
-            let items = state.protocols.filter { ids.contains($0.id) }
+            let items = state.protocols.filter {
+                ids.contains($0.id) && (selectedProtocolId == nil || selectedProtocolId == $0.id)
+            }
             let palette = colorPalette()
             return items.enumerated().map { idx, p in
                 let comps = state.protocolCompletions.filter { $0.protocolId == p.id && $0.date >= startDate && p.isActive(on: $0.date) }
                 let grouped = Dictionary(grouping: comps) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { ($0, Double(grouped[$0]?.filter { $0.completed }.count ?? 0)) }
-                return ChartSeries(name: p.name, color: palette[idx % palette.count], points: points)
+                let points = grouped.keys.sorted().map { day in
+                    let value = Double(grouped[day]?.filter { $0.completed }.count ?? 0)
+                    return ChartPoint(date: day, displayValue: value, rawValue: value)
+                }
+                return ChartSeries(
+                    id: p.id.uuidString,
+                    name: p.name,
+                    color: palette[idx % palette.count],
+                    styleIndex: idx,
+                    points: points,
+                    rawUnit: "fois",
+                    rawValueFormatter: nil
+                )
             }
         case .supplements:
             let ids = Set(state.supplementIntakes.map { $0.supplementId })
-            let items = state.supplements.filter { ids.contains($0.id) }
+            let items = state.supplements.filter {
+                ids.contains($0.id) && (selectedSupplementId == nil || selectedSupplementId == $0.id)
+            }
             let palette = colorPalette()
             return items.enumerated().map { idx, s in
                 let ints = state.supplementIntakes.filter { $0.supplementId == s.id && $0.date >= startDate && s.isActive(on: $0.date) }
                 let grouped = Dictionary(grouping: ints) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { ($0, Double(grouped[$0]?.filter { $0.taken }.count ?? 0)) }
-                return ChartSeries(name: s.name, color: palette[idx % palette.count], points: points)
+                let points = grouped.keys.sorted().map { day in
+                    let value = Double(grouped[day]?.filter { $0.taken }.count ?? 0)
+                    return ChartPoint(date: day, displayValue: value, rawValue: value)
+                }
+                return ChartSeries(
+                    id: s.id.uuidString,
+                    name: s.name,
+                    color: palette[idx % palette.count],
+                    styleIndex: idx,
+                    points: points,
+                    rawUnit: "fois",
+                    rawValueFormatter: nil
+                )
             }
         }
     }
@@ -339,11 +679,65 @@ struct StatsView: View {
         let cal = Calendar.current
         let end = Date()
         switch range {
-        case .d7: return (cal.date(byAdding: .day, value: -7, to: end)!, end)
-        case .d30: return (cal.date(byAdding: .day, value: -30, to: end)!, end)
-        case .d90: return (cal.date(byAdding: .day, value: -90, to: end)!, end)
-        case .all: return (Date.distantPast, end)
+        case .d7: return (cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: end)) ?? end, end)
+        case .d30: return (cal.date(byAdding: .day, value: -29, to: cal.startOfDay(for: end)) ?? end, end)
+        case .d90: return (cal.date(byAdding: .day, value: -89, to: cal.startOfDay(for: end)) ?? end, end)
+        case .all: return (earliestRelevantDate ?? (cal.date(byAdding: .day, value: -29, to: end) ?? end), end)
         }
+    }
+
+    private var rangeDays: Int {
+        switch range {
+        case .d7: return 7
+        case .d30: return 30
+        case .d90: return 90
+        case .all:
+            guard let earliestRelevantDate else { return 30 }
+            let days = Calendar.current.dateComponents(
+                [.day],
+                from: Calendar.current.startOfDay(for: earliestRelevantDate),
+                to: Calendar.current.startOfDay(for: Date())
+            ).day ?? 29
+            return max(1, days + 1)
+        }
+    }
+
+    private var earliestRelevantDate: Date? {
+        switch grouping {
+        case .metrics:
+            let ids = selectedMetricIds.isEmpty
+                ? Set(state.metrics.map(\.id))
+                : selectedMetricIds
+            return state.metricEntries
+                .filter { ids.contains($0.metricId) }
+                .map(\.date)
+                .min()
+        case .protocols:
+            return state.protocolCompletions
+                .filter { selectedProtocolId == nil || $0.protocolId == selectedProtocolId }
+                .map(\.date)
+                .min()
+        case .supplements:
+            return state.supplementIntakes
+                .filter { selectedSupplementId == nil || $0.supplementId == selectedSupplementId }
+                .map(\.date)
+                .min()
+        }
+    }
+
+    private func metricName(for id: UUID) -> String {
+        state.metrics.first(where: { $0.id == id })?.name ?? "—"
+    }
+
+    private func logObservationToday(for experiment: NOf1Experiment) {
+        let todayEntries = state.metricEntries
+            .filter { $0.metricId == experiment.targetMetricId && Calendar.current.isDateInToday($0.date) }
+            .sorted { $0.date > $1.date }
+        let fallbackEntries = state.metricEntries
+            .filter { $0.metricId == experiment.targetMetricId }
+            .sorted { $0.date > $1.date }
+        let value = todayEntries.first?.value ?? fallbackEntries.first?.value ?? 0
+        state.recordObservation(experimentId: experiment.id, value: value, date: Date(), notes: nil)
     }
 
     private func customTicks() -> [Date]? {
@@ -357,7 +751,11 @@ struct StatsView: View {
         else { step = days / 6 }
         var arr: [Date] = []
         var d = cal.startOfDay(for: start)
-        while d <= end { arr.append(d); d = cal.date(byAdding: .day, value: step, to: d)! }
+        while d <= end {
+            arr.append(d)
+            guard let next = cal.date(byAdding: .day, value: max(step, 1), to: d), next > d else { break }
+            d = next
+        }
         arr.append(cal.startOfDay(for: end))
         return Array(Set(arr)).sorted()
     }
@@ -367,20 +765,19 @@ struct StatsView: View {
         let name = m.name.lowercased()
         // Heures/minutes (ex: sommeil): bornes alignées sur des multiples de 30 minutes
         if m.kind == .hoursMinutes || name.contains("sommeil") {
-            let values = series.flatMap { $0.points.map { max(0, $0.1) } }
+            let values = series.flatMap { $0.points.map { max(0, $0.displayValue) } }
             guard let minVal0 = values.min(), let maxVal0 = values.max() else { return (0, 16*60) }
             let step: Double = 30
-            var yMin = floor(minVal0 / step) * step
+            let yMin = floor(minVal0 / step) * step
             var yMax = ceil(maxVal0 / step) * step
             if yMax - yMin < step * 4 { yMax = yMin + step * 4 } // au moins 2h de hauteur
             return (yMin, yMax)
         }
         if name.contains("poids") {
-            // Optionnel: recadrer autour du poids courant si les variations sont faibles
-            let entries = state.metricEntries.filter { $0.metricId == m.id }
-            let values = entries.map { $0.value }
-            if let base = values.last ?? values.first {
-                return (base*0.9, base*1.1)
+            let values = series.flatMap { $0.points.map(\.displayValue) }
+            if let minimum = values.min(), let maximum = values.max() {
+                let padding = max(0.5, (maximum - minimum) * 0.2)
+                return (minimum - padding, maximum + padding)
             }
         }
         return (nil, nil)
@@ -391,13 +788,71 @@ struct StatsView: View {
             HStack(spacing: 12) {
                 ForEach(series) { s in
                     HStack(spacing: 6) {
-                        Circle().fill(s.color).frame(width: 8, height: 8)
+                        legendSymbol(for: s)
                         Text(s.name).font(.caption)
                     }
                 }
             }
             .padding(.vertical, 2)
         }
+    }
+
+    private func legendSymbol(for series: ChartSeries) -> some View {
+        let symbolName: String
+        switch series.styleIndex % 3 {
+        case 1: symbolName = "square.fill"
+        case 2: symbolName = "diamond.fill"
+        default: symbolName = "circle.fill"
+        }
+        return Image(systemName: symbolName)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundColor(series.color)
+            .frame(width: 10, height: 10)
+            .accessibilityHidden(true)
+    }
+
+    private var chartSectionTitle: String {
+        switch grouping {
+        case .metrics: return "Évolution des métriques"
+        case .protocols: return "Réalisation des protocoles"
+        case .supplements: return "Prises de suppléments"
+        }
+    }
+
+    private var periodDescription: String {
+        switch range {
+        case .d7: return "7 derniers jours"
+        case .d30: return "30 derniers jours"
+        case .d90: return "90 derniers jours"
+        case .all: return "Toutes les données disponibles"
+        }
+    }
+
+    private func correlationTitle(_ insight: CorrelationInsight) -> String {
+        let metricA = metricName(for: insight.metricAId)
+        let metricB = metricName(for: insight.metricBId)
+        if insight.lagDays > 0 {
+            return "\(metricA) → \(metricB) · +\(insight.lagDays) j"
+        }
+        if insight.lagDays < 0 {
+            return "\(metricB) → \(metricA) · +\(abs(insight.lagDays)) j"
+        }
+        return "\(metricA) ↔ \(metricB) · même jour"
+    }
+
+    private func evidenceColor(_ evidence: CorrelationEvidence) -> Color {
+        switch evidence {
+        case .exploratory: return .orange
+        case .moderate: return .blue
+        case .strong: return .green
+        }
+    }
+
+    private func confidenceIntervalText(_ insight: CorrelationInsight) -> String {
+        guard let lower = insight.confidenceLower, let upper = insight.confidenceUpper else {
+            return "—"
+        }
+        return String(format: "[%.2f ; %.2f]", lower, upper)
     }
 
     private func valueFormatterForMetric(_ m: Metric) -> ((Double) -> String)? {
@@ -413,37 +868,66 @@ struct StatsView: View {
         if name.contains("poids") {
             return { v in String(format: "%.1f", v) }
         }
+        if m.unit == "ms" {
+            return { v in String(format: "%.1f", v) }
+        }
         return { v in String(format: "%.0f", v) }
     }
 
     func share(text: String) {
         let av = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        UIApplication.shared.windows.first?.rootViewController?.present(av, animated: true)
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController else {
+            return
+        }
+        var presenter = root
+        while let presented = presenter.presentedViewController {
+            presenter = presented
+        }
+        av.popoverPresentationController?.sourceView = presenter.view
+        presenter.present(av, animated: true)
     }
 }
 
-struct SimpleLineChart: View {
-    let entries: [MetricEntry]
-    
+private struct CorrelationBar: View {
+    let value: Double
+    let color: Color
+
     var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let sorted = entries.sorted{ $0.date < $1.date }
-            let values = sorted.map{$0.value}
-            let maxV = max(values.max() ?? 1, 1)
-            let points: [CGPoint] = sorted.enumerated().map { (idx, e) in
-                let x = CGFloat(idx) / CGFloat(max(sorted.count-1,1)) * w
-                let y = h - CGFloat(e.value / maxV) * h
-                return CGPoint(x: x, y: y)
+        GeometryReader { proxy in
+            let width = max(proxy.size.width, 1)
+            let center = width / 2
+            let clamped = min(1, max(-1, value))
+            let magnitude = abs(clamped) * center
+            let start = clamped >= 0 ? center : center - magnitude
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.10))
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.35))
+                    .frame(width: 1)
+                    .offset(x: center)
+                Capsule()
+                    .fill(color.opacity(0.75))
+                    .frame(width: max(magnitude, 2))
+                    .offset(x: start)
             }
-            Path { path in
-                guard let first = points.first else { return }
-                path.move(to: first)
-                for p in points.dropFirst() { path.addLine(to: p) }
+            .overlay {
+                HStack {
+                    Text("−")
+                    Spacer()
+                    Text("+")
+                }
+                .font(.caption2.weight(.bold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 5)
             }
-            .stroke(Color("Secondary"), lineWidth: 2)
         }
+        .accessibilityLabel(value >= 0 ? "Association positive" : "Association négative")
+        .accessibilityValue(String(format: "%.2f", value))
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct SwipeableRow<Content: View>: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onTap: (() -> Void)?
     let content: () -> Content
 
     @GestureState private var dragX: CGFloat = 0
@@ -12,9 +13,15 @@ struct SwipeableRow<Content: View>: View {
 
     private let buttonSize: CGFloat = 52
 
-    init(onEdit: @escaping () -> Void, onDelete: @escaping () -> Void, @ViewBuilder content: @escaping () -> Content) {
+    init(
+        onEdit: @escaping () -> Void,
+        onDelete: @escaping () -> Void,
+        onTap: (() -> Void)? = nil,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
         self.onEdit = onEdit
         self.onDelete = onDelete
+        self.onTap = onTap
         self.content = content
     }
 
@@ -59,7 +66,13 @@ struct SwipeableRow<Content: View>: View {
                         .offset(x: contentOffset)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .gesture(drag)
-                        .onTapGesture { if showLeading || showTrailing { close() } }
+                        .onTapGesture {
+                            if showLeading || showTrailing {
+                                close()
+                            } else {
+                                onTap?()
+                            }
+                        }
                         .zIndex(1)
                 }
                 .accessibilityElement(children: .contain)
@@ -107,7 +120,13 @@ struct SwipeableRow<Content: View>: View {
                         .offset(x: contentOffset)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .gesture(drag)
-                        .onTapGesture { if showLeading || showTrailing { close() } }
+                        .onTapGesture {
+                            if showLeading || showTrailing {
+                                close()
+                            } else {
+                                onTap?()
+                            }
+                        }
                         .zIndex(1)
                 }
                 .accessibilityElement(children: .contain)
@@ -163,5 +182,4 @@ struct SwipeableRow<Content: View>: View {
         #endif
     }
 }
-
 

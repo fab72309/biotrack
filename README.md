@@ -1,9 +1,10 @@
-# BioTrack (MVP) — iOS SwiftUI Skeleton
+# BioTrack — suivi personnel privé sur iOS
 
 [![iOS CI](https://github.com/fab72309/biotrack/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/fab72309/biotrack/actions/workflows/ios-ci.yml)
 
-Skeleton iOS app for **BioTrack**, a biohacking tracker focused on checklists, metrics, stats, protocols and supplements.  
-This repo is designed to be minimal, privacy-first (local storage), and **XcodeGen**-driven for easy project generation.
+BioTrack est une application SwiftUI de suivi personnel centrée sur les routines, métriques, check-ins, protocoles et suppléments. Les données restent sur l’appareil, sans compte ni backend BioTrack.
+
+La version 0.2.0 ajoute un moteur d’associations statistiques robuste, des graphiques accessibles, des expériences N-of-1, HealthKit en lecture, des widgets, les Live Activities et des sauvegardes chiffrées.
 
 ## Quickstart
 
@@ -19,22 +20,21 @@ This repo is designed to be minimal, privacy-first (local storage), and **XcodeG
    ```
 4. Build & run the **BioTrack** scheme on an iPhone Simulator.
 
-## What’s inside
+## Fonctionnalités
 
-- SwiftUI Tabs: **Checklist**, **Track**, **Stats**, **Protocols**, **Supplements**
-- Local JSON storage (Documents directory) via `LocalStore`
-- Notifications stub via `NotificationService`
-- HealthKit stub (sleep/steps read; mindfulness/nutrition write) via `HealthKitService`
-- CSV export via `ExportService`
-- FR/EN localization via `Localizable.strings`
-- App privacy-first: no accounts, no servers
-
-> Note: This is a **skeleton**—safe stubs & minimal logic are included to compile and demonstrate architecture. You can iterate quickly from here.
+- checklist quotidienne, rappels locaux et profils de routine ;
+- métriques personnalisées et check-ins matin/soir ;
+- lecture HealthKit facultative : sommeil, pas, poids, fréquence cardiaque au repos et HRV ;
+- graphiques multi-séries accessibles et filtres par période ;
+- associations Pearson/Spearman avec intervalle de confiance et correction des comparaisons multiples ;
+- protocoles, suppléments et expériences N-of-1 ;
+- widget, Live Activity, export CSV/JSON et sauvegarde chiffrée.
 
 ## Targets
 
-- iOS 15+ (SwiftUI)
-- HealthKit is optional; enable capability in Signing & Capabilities if you need actual reads/writes.
+- iOS 15+ pour l’app principale ;
+- iOS 17+ pour le widget et la Live Activity ;
+- HealthKit est facultatif et utilisé en lecture uniquement.
 
 ## Project structure
 
@@ -54,13 +54,36 @@ BioTrack-MVP/
 └─ README.md
 ```
 
-## CI (optional)
+## Validation
 
-A lightweight GitHub Actions workflow (`ios-ci.yml`) builds the app on macOS with XcodeGen.
+Le schéma `BioTrack` contient les tests unitaires du moteur statistique. La CI GitHub reconstruit l’app sur simulateur.
 
-## Privacy
+```bash
+xcodebuild \
+  -project BioTrack.xcodeproj \
+  -scheme BioTrack \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+  test
+```
 
-All data remain **on device**. Health data access (if enabled) requires explicit user permission. See `PrivacyPolicy.md` (simplified) and Info.plist usage descriptions.
+Le test de fumée statistique peut aussi s’exécuter sans simulateur en compilant [Scripts/CorrelationSmoke.swift](Scripts/CorrelationSmoke.swift) avec les modèles et services associés.
+
+## Landing page (marketing)
+
+This repo also includes a standalone landing + waitlist server in `landing/`.
+
+```bash
+cd landing
+npm run dev
+```
+
+The landing includes SEO/AEO metadata, legal pages, waitlist form (`POST /api/leads`), double opt-in confirmation, and analytics events (`POST /api/events`).
+
+## Confidentialité et sécurité
+
+Les données restent **sur l’appareil**. Le fichier local utilise la protection des fichiers iOS et est exclu des sauvegardes iCloud. HealthKit nécessite un consentement explicite et n’est jamais utilisé pour la publicité. Les résultats statistiques sont exploratoires et ne constituent ni un diagnostic ni un conseil médical.
+
+Les pages publiques destinées aux stores se trouvent dans `docs/` et sont publiées par GitHub Pages.
 
 ## License
 

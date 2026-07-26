@@ -3,18 +3,29 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var state: AppState
     @AppStorage("selectedTab") private var selectedTab: Int = 0
+    @AppStorage("showRecommendationsCard") private var showRecommendationsCard: Bool = true
+    @AppStorage("collapseRecommendationsCard") private var collapseRecommendationsCard: Bool = false
+    @AppStorage(CheckInMetricSelection.storageKey) private var selectedCheckInMetricIdsRaw: String = ""
 
     @State private var selectedProtocol: ProtocolItem? = nil
     @State private var selectedSupplement: Supplement? = nil
 
     @State private var showSettings = false
     @State private var showingObjectives = false
+    @State private var showingMorningCheckIn = false
+    @State private var showingEveningCheckIn = false
+    @State private var showingStreakAchievements = false
+    @State private var showingCheckInMetricSelection = false
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
+                    if showRecommendationsCard {
+                        recommendationsCard
+                    }
+                    checkInCard
                     remindersCard
                     objectivesCard
                     protocolsSection
@@ -23,14 +34,66 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
-            .navigationTitle("BioTrack")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    brandMark
+                }
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showSettings = true }) { Image(systemName: "gearshape") }
+                    Button(action: { showSettings = true }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(Color("Primary"))
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Paramètres")
                 }
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView().withSheetDetentsIfAvailable() }
+        .sheet(isPresented: $showingMorningCheckIn) {
+            DailyCheckInSheet(
+                period: .morning,
+                existing: state.checkIn(for: .morning),
+                selectedMetrics: selectedCheckInMetrics,
+                existingMetricValues: checkInMetricValues(for: .morning)
+            ) { input in
+                state.upsertCheckIn(
+                    period: .morning,
+                    energy: input.energy,
+                    mood: input.mood,
+                    sleepQuality: input.sleepQuality,
+                    note: input.note,
+                    customMetricValues: input.metricValues
+                )
+            }.withSheetDetentsIfAvailable()
+        }
+        .sheet(isPresented: $showingEveningCheckIn) {
+            DailyCheckInSheet(
+                period: .evening,
+                existing: state.checkIn(for: .evening),
+                selectedMetrics: selectedCheckInMetrics,
+                existingMetricValues: checkInMetricValues(for: .evening)
+            ) { input in
+                state.upsertCheckIn(
+                    period: .evening,
+                    energy: input.energy,
+                    mood: input.mood,
+                    stress: input.stress,
+                    note: input.note,
+                    customMetricValues: input.metricValues
+                )
+            }.withSheetDetentsIfAvailable()
+        }
+        .sheet(isPresented: $showingCheckInMetricSelection) {
+            NavigationView {
+                CheckInMetricSelectionView(selectionRaw: $selectedCheckInMetricIdsRaw)
+                    .environmentObject(state)
+            }
+            .withSheetDetentsIfAvailable()
+        }
         .sheet(item: $selectedProtocol) { item in
             ProtocolLogSheet(item: item) { completed, note in
                 if completed {
@@ -62,36 +125,201 @@ struct HomeView: View {
                 state.reminders.append(r)
                 state.save()
 
-                NotificationService.shared.getAuthorizationStatus { status in
-                    let comps = Calendar.current.dateComponents([.hour, .minute], from: data.time)
-                    let hour = comps.hour ?? 8
-                    let minute = comps.minute ?? 0
-                    if data.notificationsEnabled && (status == .authorized || status == .provisional || status == .ephemeral) {
-                        if data.days.isEmpty {
-                            NotificationService.shared.scheduleDailyReminder(id: UUID().uuidString, title: data.title, hour: hour, minute: minute)
-                        } else {
-                            for d in data.days { NotificationService.shared.scheduleWeeklyReminder(id: UUID().uuidString, title: data.title, hour: hour, minute: minute, weekday: d) }
-                        }
-                    }
+                if data.notificationsEnabled {
+                    NotificationService.shared.scheduleReminder(r)
                 }
             }.withSheetDetentsIfAvailable()
         }
+        .onAppear {
+            state.applyAdaptiveGoalPolicyIfNeeded()
+            state.refreshInsightsAndRecommendations()
+        }
+        .overlay {
+            if showingStreakAchievements {
+                StreakAchievementsPopup(isPresented: $showingStreakAchievements)
+                    .environmentObject(state)
+            }
+        }
+    }
+
+    private var brandMark: some View {
+        Image("HeaderLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 34, height: 34)
+            .frame(width: 36, height: 36, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("BioTrack")
     }
 
     private var header: some View {
-        HStack {
-            Text("Votre Checklist quotidienne")
-                .font(.title3.weight(.bold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .allowsTightening(true)
-                .truncationMode(.tail)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Votre Checklist quotidienne")
+                    .font(.title3.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .allowsTightening(true)
+                    .truncationMode(.tail)
+                Text(Date(), style: .date)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .clipShape(Capsule())
+            }
             Spacer()
-            Text(Date(), style: .date)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color(UIColor.secondarySystemBackground))
-                .clipShape(Capsule())
+            todayTasksButton
+                .offset(x: 4, y: -8)
+        }
+    }
+
+    private var todayTasksButton: some View {
+        let pendingTasks = todayTaskCount()
+        return Button(action: {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+                showingObjectives = true
+            }
+        }) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color("Primary"), Color("Primary").opacity(0.65)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.45), lineWidth: 1)
+                    )
+                    .shadow(color: Color("Primary").opacity(0.35), radius: 8, x: 0, y: 4)
+                Text(todayTasksBadgeLabel(for: pendingTasks))
+                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                showingStreakAchievements = true
+            } label: {
+                Label("Voir les succès", systemImage: "trophy.fill")
+            }
+        }
+        .accessibilityLabel("Voir les éléments à faire aujourd'hui")
+        .accessibilityValue("\(pendingTasks) élément(s) restant(s)")
+        .accessibilityHint("Affiche le détail de vos actions du jour")
+    }
+
+    private var checkInCard: some View {
+        SurfaceCard {
+            HStack {
+                Text("Check-ins quotidiens").font(.headline)
+                Spacer()
+                Button(action: { showingCheckInMetricSelection = true }) {
+                    Image(systemName: "slider.horizontal.3")
+                        .imageScale(.small)
+                }
+                .buttonStyle(CirclePressIconButtonStyle())
+                .accessibilityLabel("Personnaliser les champs de check-in")
+                Text("\(checkInCompletionCount())/2")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+            }
+            if !selectedCheckInMetrics.isEmpty {
+                Text("\(selectedCheckInMetrics.count) métrique(s) personnalisée(s) depuis Suivi")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            HStack(spacing: 10) {
+                checkInButton(period: .morning, isDone: state.checkIn(for: .morning) != nil) {
+                    showingMorningCheckIn = true
+                }
+                checkInButton(period: .evening, isDone: state.checkIn(for: .evening) != nil) {
+                    showingEveningCheckIn = true
+                }
+            }
+        }
+    }
+
+    private func checkInButton(period: CheckInPeriod, isDone: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isDone ? .green : .secondary)
+                Text(period.displayName)
+                Spacer()
+                Text(isDone ? "Complété" : "À faire")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var recommendationsCard: some View {
+        SurfaceCard {
+            HStack {
+                Text("Recommandations").font(.headline)
+                Spacer()
+                Button(action: {
+                    state.refreshInsightsAndRecommendations()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .imageScale(.small)
+                }
+                .buttonStyle(CirclePressIconButtonStyle())
+                .accessibilityLabel("Rafraîchir les recommandations")
+
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        collapseRecommendationsCard.toggle()
+                    }
+                }) {
+                    Image(systemName: collapseRecommendationsCard ? "chevron.down" : "chevron.up")
+                        .imageScale(.small)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel(collapseRecommendationsCard ? "Déplier les recommandations" : "Replier les recommandations")
+            }
+
+            if collapseRecommendationsCard {
+                HStack(spacing: 8) {
+                    Image(systemName: state.recommendations.isEmpty ? "sparkles" : "lightbulb.max.fill")
+                        .foregroundColor(Color("Primary"))
+                    Text(state.recommendations.isEmpty ? "Aucune recommandation en attente" : "\(min(3, state.recommendations.count)) recommandation(s) disponible(s)")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
+            } else {
+                if state.recommendations.isEmpty {
+                    Text("Aucune recommandation pour le moment.")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                } else {
+                    ForEach(Array(state.recommendations.prefix(3))) { item in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.title)
+                                .font(.subheadline.weight(.semibold))
+                            Text(item.message)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
         }
     }
 
@@ -129,6 +357,12 @@ struct HomeView: View {
                                 set: { newValue in
                                     if let idx = state.reminders.firstIndex(where: { $0.id == r.id }) {
                                         state.reminders[idx].enabled = newValue
+                                        let updated = state.reminders[idx]
+                                        if newValue {
+                                            NotificationService.shared.scheduleReminder(updated)
+                                        } else {
+                                            NotificationService.shared.cancelReminder(baseId: updated.notificationBaseId)
+                                        }
                                         state.save()
                                     }
                                 }
@@ -231,7 +465,15 @@ struct HomeView: View {
                                 .onTapGesture { selectedTab = 3 }
                         }
                         Spacer()
-                        Button { selectedProtocol = p } label: { Image(systemName: "chevron.right").foregroundColor(.secondary) }
+                        HStack(spacing: 8) {
+                            Button {
+                                toggleProtocolTimer(p)
+                            } label: {
+                                Image(systemName: ProtocolLiveActivityService.shared.activeProtocolId() == p.id ? "stop.circle" : "timer")
+                                    .foregroundColor(Color("Primary"))
+                            }
+                            Button { selectedProtocol = p } label: { Image(systemName: "chevron.right").foregroundColor(.secondary) }
+                        }
                     }
                     .padding(12)
                     .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
@@ -363,6 +605,16 @@ struct HomeView: View {
         state.save()
     }
 
+    private func toggleProtocolTimer(_ item: ProtocolItem) {
+        let active = ProtocolLiveActivityService.shared.activeProtocolId()
+        if active == item.id {
+            ProtocolLiveActivityService.shared.stop()
+        } else {
+            let duration = item.targetMinutes ?? 10
+            ProtocolLiveActivityService.shared.start(protocolId: item.id, protocolName: item.name, durationMinutes: duration)
+        }
+    }
+
     private func toggleSupplement(_ s: Supplement) {
         if let idx = state.supplementIntakes.firstIndex(where: { $0.supplementId == s.id && Calendar.current.isDateInToday($0.date) }) {
             state.supplementIntakes.remove(at: idx)
@@ -411,7 +663,12 @@ struct HomeView: View {
     }
 
     private var sortedReminders: [Reminder] {
-        state.reminders.sorted { a, b in
+        let profile = state.currentRoutineProfile()
+        let excluded = Set(profile?.disabledReminderIds ?? [])
+        return state.reminders
+            .filter { !excluded.contains($0.id) }
+            .filter { DailyPlanner.isReminderScheduledToday($0, now: Date()) }
+            .sorted { a, b in
             if a.hour == b.hour { return a.minute < b.minute }
             return a.hour < b.hour
         }
@@ -428,6 +685,68 @@ struct HomeView: View {
         let supplementsDone = supplementsDoneCount()
         return protocolsDone + supplementsDone
     }
+
+    private func checkInCompletionCount() -> Int {
+        var count = 0
+        if state.checkIn(for: .morning) != nil { count += 1 }
+        if state.checkIn(for: .evening) != nil { count += 1 }
+        return count
+    }
+
+    private var pendingCheckInPeriods: [CheckInPeriod] {
+        CheckInPeriod.allCases.filter { state.checkIn(for: $0) == nil }
+    }
+
+    private func pendingProtocolsToday() -> [ProtocolItem] {
+        protocolsScheduledToday().filter { !isProtocolDoneToday($0) }
+    }
+
+    private func pendingSupplementsToday() -> [Supplement] {
+        supplementsScheduledToday().filter { !isSupplementTakenToday($0) }
+    }
+
+    private func todayTaskCount() -> Int {
+        pendingCheckInPeriods.count + pendingProtocolsToday().count + pendingSupplementsToday().count
+    }
+
+    private func todayTasksBadgeLabel(for count: Int) -> String {
+        count > 99 ? "99+" : "\(count)"
+    }
+
+    private var selectedCheckInMetrics: [Metric] {
+        let orderedIds = CheckInMetricSelection.sanitizeOrdered(
+            CheckInMetricSelection.parseOrdered(selectedCheckInMetricIdsRaw),
+            availableIds: state.metrics.map(\.id)
+        )
+        guard !orderedIds.isEmpty else { return [] }
+        let byId = Dictionary(uniqueKeysWithValues: state.metrics.map { ($0.id, $0) })
+        return orderedIds.compactMap { byId[$0] }
+    }
+
+    private func checkInMetricValues(for period: CheckInPeriod, on date: Date = Date()) -> [UUID: Double] {
+        let calendar = Calendar.current
+        let tag = "checkin:\(period.rawValue)"
+        var values: [UUID: Double] = [:]
+
+        for metric in selectedCheckInMetrics {
+            let sameDayEntries = state.metricEntries.filter {
+                $0.metricId == metric.id && calendar.isDate($0.date, inSameDayAs: date)
+            }
+            if let tagged = sameDayEntries
+                .filter({ $0.notes?.hasPrefix(tag) == true })
+                .sorted(by: { $0.date > $1.date })
+                .first {
+                values[metric.id] = tagged.value
+                continue
+            }
+            if let latest = sameDayEntries.sorted(by: { $0.date > $1.date }).first {
+                values[metric.id] = latest.value
+            }
+        }
+
+        return values
+    }
+
     private func currentWeekdayMon1ToSun7() -> Int {
         // Calendar .weekday: 1=Sun ... 7=Sat → convert to Mon=1 ... Sun=7
         let wd = Calendar.current.component(.weekday, from: Date())
@@ -446,7 +765,8 @@ struct HomeView: View {
     }
 
     private func protocolsScheduledToday() -> [ProtocolItem] {
-        state.protocols.filter { item in
+        let profile = state.currentRoutineProfile()
+        let base = state.protocols.filter { item in
             guard item.isActive(on: Date()) else { return false }
             switch item.frequency {
             case .daily: return true
@@ -457,18 +777,240 @@ struct HomeView: View {
                 return set.contains(currentWeekdayMon1ToSun7())
             }
         }
+        return DailyPlanner.applyProfileFilters(to: base, profile: profile)
     }
 
     private func supplementsScheduledToday() -> [Supplement] {
-        state.supplements.filter { s in
+        let profile = state.currentRoutineProfile()
+        let base = state.supplements.filter { s in
             guard s.isActive(on: Date()) else { return false }
             return isScheduledToday(s.frequency, daysFallback: s.daysOfWeek)
         }
+        return DailyPlanner.applyProfileFilters(to: base, profile: profile)
+    }
+}
+
+private struct CirclePressIconButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(8)
+            .contentShape(Circle())
+            .background(
+                Circle()
+                    .fill(Color("Primary").opacity(configuration.isPressed ? 0.18 : 0))
+            )
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private struct StreakAchievementsPopup: View {
+    @EnvironmentObject var state: AppState
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        let snapshot = state.buildSnapshot()
+        let summary = StreakEngine.buildSummary(snapshot: snapshot)
+        let global = summary.global
+        let bestProtocol = bestProtocolLine(from: summary)
+        let bestSupplement = bestSupplementLine(from: summary)
+        let todaySnapshot = DailyPlanner.buildWidgetSnapshot(from: snapshot, now: Date())
+        let todayDone = todaySnapshot.progressDone
+        let todayTotal = todaySnapshot.progressTotal
+        let completionRate = todayTotal == 0 ? 0 : Int((Double(todayDone) / Double(todayTotal)) * 100)
+
+        ZStack {
+            LinearGradient(
+                colors: [Color.black.opacity(0.55), Color.black.opacity(0.32)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isPresented = false
+                    }
+                }
+
+            VStack(spacing: 0) {
+                ZStack(alignment: .topTrailing) {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color("Primary"), Color("Primary").opacity(0.62)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Label("Hall des succès", systemImage: "trophy.fill")
+                                .font(.headline)
+                                .foregroundColor(Color("OnPrimary"))
+                            Spacer()
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isPresented = false
+                                }
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title3)
+                                    .foregroundColor(Color("OnPrimary").opacity(0.9))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        HStack(alignment: .bottom) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("\(global)")
+                                    .font(.system(size: 46, weight: .black, design: .rounded))
+                                    .foregroundColor(Color("OnPrimary"))
+                                Text(global > 1 ? "jours consécutifs" : "jour consécutif")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(Color("OnPrimary").opacity(0.92))
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(streakTierTitle(for: global))
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundColor(Color("OnPrimary"))
+                                Text(streakTierSubtitle(for: global))
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundColor(Color("OnPrimary").opacity(0.88))
+                            }
+                        }
+                    }
+                    .padding(18)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 170)
+
+                VStack(spacing: 10) {
+                    achievementCard(
+                        title: "Meilleur protocole",
+                        value: bestProtocol?.name ?? "Aucun pour l'instant",
+                        trailing: bestProtocol.map { "\($0.days) jours" } ?? "—",
+                        systemImage: "target",
+                        tint: Color(red: 0.15, green: 0.48, blue: 0.95)
+                    )
+                    achievementCard(
+                        title: "Meilleur complément",
+                        value: bestSupplement?.name ?? "Aucun pour l'instant",
+                        trailing: bestSupplement.map { "\($0.days) jours" } ?? "—",
+                        systemImage: "pills.fill",
+                        tint: Color(red: 0.14, green: 0.62, blue: 0.42)
+                    )
+                    achievementCard(
+                        title: "Objectifs aujourd'hui",
+                        value: "\(todayDone) sur \(todayTotal) complété(s)",
+                        trailing: "\(completionRate)%",
+                        systemImage: "checkmark.seal.fill",
+                        tint: Color(red: 0.96, green: 0.52, blue: 0.15)
+                    )
+                }
+                .padding(16)
+            }
+            .frame(maxWidth: 520)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(UIColor.systemBackground), Color("Surface").opacity(0.98)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
+            )
+            .padding(24)
+            .shadow(color: .black.opacity(0.32), radius: 26, x: 0, y: 16)
+            .transition(.scale(scale: 0.95).combined(with: .opacity))
+        }
+    }
+
+    private func bestProtocolLine(from summary: StreakSummary) -> (name: String, days: Int)? {
+        guard let best = summary.protocolStreaks.max(by: { $0.value < $1.value }), best.value > 0 else {
+            return nil
+        }
+        guard let name = state.protocols.first(where: { $0.id == best.key })?.name else {
+            return nil
+        }
+        return (name, best.value)
+    }
+
+    private func bestSupplementLine(from summary: StreakSummary) -> (name: String, days: Int)? {
+        guard let best = summary.supplementStreaks.max(by: { $0.value < $1.value }), best.value > 0 else {
+            return nil
+        }
+        guard let name = state.supplements.first(where: { $0.id == best.key })?.name else {
+            return nil
+        }
+        return (name, best.value)
+    }
+
+    private func streakTierTitle(for days: Int) -> String {
+        switch days {
+        case 0: return "Niveau Départ"
+        case 1..<7: return "Niveau Focus"
+        case 7..<21: return "Niveau Régulier"
+        case 21..<45: return "Niveau Elite"
+        default: return "Niveau Légende"
+        }
+    }
+
+    private func streakTierSubtitle(for days: Int) -> String {
+        switch days {
+        case 0: return "Lance ta première série"
+        case 1..<7: return "Continue chaque jour"
+        case 7..<21: return "Habitude bien installée"
+        case 21..<45: return "Exécution très solide"
+        default: return "Constance exceptionnelle"
+        }
+    }
+
+    @ViewBuilder
+    private func achievementCard(title: String, value: String, trailing: String, systemImage: String, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(tint.opacity(0.14))
+                    .frame(width: 34, height: 34)
+                Image(systemName: systemImage)
+                    .frame(width: 20)
+                    .foregroundColor(tint)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text(value)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+            }
+            Spacer()
+            Text(trailing)
+                .font(.caption.weight(.bold))
+                .foregroundColor(tint)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(tint.opacity(0.12)))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(tint.opacity(0.16), lineWidth: 0.6)
+        )
     }
 }
 
 #Preview {
     HomeView().environmentObject(AppState())
 }
-
-

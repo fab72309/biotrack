@@ -5,12 +5,17 @@ struct ProtocolsView: View {
     @State private var showingAdd = false
     @State private var editingProtocol: ProtocolItem? = nil
     @State private var searchText: String = ""
+    @State private var showingLibrary = false
     @State private var showingFilters = false
     @State private var scope: ProtocolFilterScope = .active
     @State private var statusFilter: ProtocolStatusFilter = .all
     @State private var toDeleteProtocol: ProtocolItem? = nil
     @State private var showDeleteAlert: Bool = false
     @State private var selectedCategory: String? = nil
+    @State private var pendingTemplate: ProtocolTemplate? = nil
+    @State private var showingTemplateAddOptions = false
+    @State private var showingCustomReminderSheet = false
+    @State private var customReminderInitialData: ReminderSheet.ReminderData? = nil
     
     var body: some View {
         NavigationView {
@@ -20,6 +25,11 @@ struct ProtocolsView: View {
                     HStack(spacing: 8) {
                         SearchField(placeholder: "Rechercher des protocoles...", text: $searchText)
                             .frame(maxWidth: .infinity)
+                        Button(action: { showingLibrary = true }) {
+                            Image(systemName: "chart.bar.doc.horizontal")
+                                .imageScale(.large)
+                        }
+                        .accessibilityLabel("Bibliothèque de protocoles")
                         Button(action: { showingFilters = true }) {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                                 .imageScale(.large)
@@ -59,6 +69,8 @@ struct ProtocolsView: View {
                                     }, onDelete: {
                                         toDeleteProtocol = p
                                         showDeleteAlert = true
+                                    }, onTap: {
+                                        editingProtocol = p
                                     }) {
                                         HStack(alignment: .top, spacing: 10) {
                                             VStack(alignment: .leading, spacing: 2) {
@@ -66,16 +78,26 @@ struct ProtocolsView: View {
                                                 if let detail = p.detail { Text(detail).foregroundColor(.secondary) }
                                             }
                                             Spacer(minLength: 8)
-                                            Button(action: { state.toggleProtocolActivation(p.id) }) {
-                                                Text(p.active ? "Activé" : "Inactif")
-                                                    .font(.caption2.weight(.semibold))
-                                                    .padding(.horizontal, 8)
-                                                    .padding(.vertical, 4)
-                                                    .background((p.active ? Color("Primary") : Color.gray).opacity(0.15))
-                                                    .foregroundColor(p.active ? Color("Primary") : .gray)
-                                                    .clipShape(Capsule())
+                                            HStack(spacing: 8) {
+                                                Button(action: { toggleProtocolLiveActivity(p) }) {
+                                                    Image(systemName: ProtocolLiveActivityService.shared.activeProtocolId() == p.id ? "stop.circle.fill" : "clock")
+                                                        .foregroundColor(Color("Primary"))
+                                                        .imageScale(.medium)
+                                                }
+                                                .buttonStyle(.plain)
+                                                .accessibilityLabel(ProtocolLiveActivityService.shared.activeProtocolId() == p.id ? "Arrêter la Live Activity" : "Lancer la Live Activity")
+
+                                                Button(action: { state.toggleProtocolActivation(p.id) }) {
+                                                    Text(p.active ? "Activé" : "Inactif")
+                                                        .font(.caption2.weight(.semibold))
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 4)
+                                                        .background((p.active ? Color("Primary") : Color.gray).opacity(0.15))
+                                                        .foregroundColor(p.active ? Color("Primary") : .gray)
+                                                        .clipShape(Capsule())
+                                                }
+                                                .buttonStyle(.plain)
                                             }
-                                            .buttonStyle(.plain)
                                         }
                                         .padding(.vertical, 8)
                                     }
@@ -101,24 +123,67 @@ struct ProtocolsView: View {
                 }
                 .withSheetDetentsIfAvailable()
             }
+            .sheet(isPresented: $showingLibrary) {
+                TemplatesSheet { template in
+                    pendingTemplate = template
+                    showingTemplateAddOptions = true
+                }
+            }
             .sheet(isPresented: $showingAdd) {
-                ProtocolOnboardingView(isPresented: $showingAdd) { newItem in
+                ProtocolOnboardingView(isPresented: $showingAdd) { newItem, customReminder in
                     state.protocols.append(newItem)
                     state.save()
+                    if let customReminder {
+                        saveCustomReminder(customReminder)
+                    }
                 }
+            }
+            .confirmationDialog(
+                "Ajouter depuis la bibliothèque",
+                isPresented: $showingTemplateAddOptions,
+                titleVisibility: .visible,
+                presenting: pendingTemplate
+            ) { template in
+                Button("Ajouter") {
+                    _ = addProtocolFromTemplate(template)
+                    pendingTemplate = nil
+                }
+                Button("Ajouter + rappel personnalisé") {
+                    let created = addProtocolFromTemplate(template)
+                    customReminderInitialData = defaultReminderData(for: created.name, preferredHour: template.hour, preferredMinute: template.minute)
+                    showingCustomReminderSheet = true
+                    pendingTemplate = nil
+                }
+                Button("Annuler", role: .cancel) {
+                    pendingTemplate = nil
+                }
+            } message: { template in
+                Text("Souhaitez-vous ajouter un rappel personnalisé pour '\(template.name)' ?")
+            }
+            .sheet(isPresented: $showingCustomReminderSheet) {
+                ReminderSheet(initialData: customReminderInitialData) { data in
+                    saveCustomReminder(data)
+                    customReminderInitialData = nil
+                }
+                .withSheetDetentsIfAvailable()
             }
             .sheet(item: $editingProtocol) { item in
                 ProtocolEditSheet(existing: item) { updated in
                     if let idx = state.protocols.firstIndex(where: { $0.id == item.id }) {
-                        var current = state.protocols[idx]
+                        var targetIndex = idx
+                        var current = state.protocols[targetIndex]
                         if updated.active != current.active {
                             state.toggleProtocolActivation(item.id)
+                            if let refreshedIdx = state.protocols.firstIndex(where: { $0.id == item.id }) {
+                                targetIndex = refreshedIdx
+                                current = state.protocols[targetIndex]
+                            }
                         }
                         current.name = updated.name
                         current.detail = updated.detail
                         current.notes = updated.notes
                         current.category = updated.category ?? current.category
-                        state.protocols[idx] = current
+                        state.protocols[targetIndex] = current
                         state.save()
                     }
                 }
@@ -137,7 +202,7 @@ struct ProtocolsView: View {
 
     // MARK: - Grouping
     private func groupedProtocols() -> [String: [ProtocolItem]] {
-        var items = filteredProtocols()
+        let items = filteredProtocols()
         var grouped: [String: [ProtocolItem]] = [:]
         for p in items {
             let key = p.category ?? "Autre"
@@ -187,6 +252,72 @@ struct ProtocolsView: View {
     private var isFilterActive: Bool { scope != .active || statusFilter != .all }
 
     private func labelForStatus(_ s: ProtocolStatusFilter) -> String { switch s { case .all: return "Tous"; case .active: return "Actifs"; case .planned: return "Planifiés"; case .completed: return "Terminés" } }
+
+    private func toggleProtocolLiveActivity(_ item: ProtocolItem) {
+        let active = ProtocolLiveActivityService.shared.activeProtocolId()
+        if active == item.id {
+            ProtocolLiveActivityService.shared.stop()
+        } else {
+            let duration = item.targetMinutes ?? 10
+            ProtocolLiveActivityService.shared.start(
+                protocolId: item.id,
+                protocolName: item.name,
+                durationMinutes: duration
+            )
+        }
+    }
+
+    @discardableResult
+    private func addProtocolFromTemplate(_ template: ProtocolTemplate) -> ProtocolItem {
+        let protocolItem = ProtocolItem(
+            name: template.name,
+            detail: template.goal,
+            goal: template.goal,
+            intervention: template.intervention,
+            frequency: template.frequency,
+            preferredHour: DateComponents(hour: template.hour, minute: template.minute),
+            targetMinutes: template.minutes,
+            notes: template.intervention,
+            remindersEnabled: false,
+            isArchived: false,
+            startDate: Date(),
+            endDate: nil,
+            active: true,
+            activationSpans: [],
+            category: template.category
+        )
+        state.protocols.append(protocolItem)
+        state.save()
+        return protocolItem
+    }
+
+    private func defaultReminderData(for protocolName: String, preferredHour: Int, preferredMinute: Int) -> ReminderSheet.ReminderData {
+        let defaultTime = Calendar.current.date(bySettingHour: preferredHour, minute: preferredMinute, second: 0, of: Date()) ?? Date()
+        return ReminderSheet.ReminderData(
+            title: "Lancer \(protocolName)",
+            time: defaultTime,
+            days: Set(1...7),
+            description: "",
+            notificationsEnabled: true
+        )
+    }
+
+    private func saveCustomReminder(_ data: ReminderSheet.ReminderData) {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: data.time)
+        let reminder = Reminder(
+            title: data.title,
+            hour: comps.hour ?? 8,
+            minute: comps.minute ?? 0,
+            weekdays: Array(data.days).sorted(),
+            notes: data.description,
+            enabled: data.notificationsEnabled
+        )
+        state.reminders.append(reminder)
+        state.save()
+        if reminder.enabled {
+            NotificationService.shared.scheduleReminder(reminder)
+        }
+    }
 
     private func categoryChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {

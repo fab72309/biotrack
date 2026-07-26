@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct ProtocolOnboardingView: View {
+    @EnvironmentObject var state: AppState
     @Binding var isPresented: Bool
-    let onCreate: (ProtocolItem) -> Void
+    let onCreate: (ProtocolItem, ReminderSheet.ReminderData?) -> Void
 
     @State private var name: String = ""
     @State private var detail: String = ""
@@ -16,8 +17,12 @@ struct ProtocolOnboardingView: View {
     @State private var showingFrequency: Bool = false
     @State private var showingTime: Bool = false
     @State private var frequency: Frequency = .daily
-
-    private let quickCategories = ["Cognition", "Énergie", "Récupération", "Sommeil", "Métabolisme"]
+    @State private var showingCustomReminderSheet: Bool = false
+    @State private var customReminderData: ReminderSheet.ReminderData? = nil
+    @State private var didSelectTemplate: Bool = false
+    @State private var pendingProtocolForCreate: ProtocolItem? = nil
+    @State private var pendingReminderForCreate: ReminderSheet.ReminderData? = nil
+    @State private var showSaveTemplatePrompt: Bool = false
 
     var body: some View {
         NavigationView {
@@ -34,6 +39,31 @@ struct ProtocolOnboardingView: View {
                 }
                 Section(header: Text("Informations")) {
                     TextField("Nom", text: $name)
+                    if !protocolSuggestions.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Suggestions")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            ForEach(protocolSuggestions) { suggestion in
+                                Button(action: { applyProtocolSuggestion(suggestion) }) {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "sparkles")
+                                            .font(.caption)
+                                            .foregroundColor(Color("Primary"))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(suggestion.name)
+                                                .font(.subheadline.weight(.semibold))
+                                            Text("\(suggestion.category) • \(suggestion.minutes) min")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
                     TextField("Détail", text: $detail)
                     // Sélecteur de catégorie (feuille)
                     Button(action: { showingCategory = true }) {
@@ -75,10 +105,38 @@ struct ProtocolOnboardingView: View {
                         }
                     }
                 }
-                Section { Button("Créer") { create() }.frame(maxWidth: .infinity, alignment: .center) }
+                Section(header: Text("Rappel personnalisé (optionnel)")) {
+                    Button(action: { showingCustomReminderSheet = true }) {
+                        HStack {
+                            Image(systemName: "bell.badge")
+                            Text(customReminderData == nil ? "Ajouter un rappel personnalisé" : "Modifier le rappel personnalisé")
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundColor(.secondary)
+                        }
+                    }
+                    if let reminder = customReminderData {
+                        Text(customReminderSummary(reminder))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button("Supprimer le rappel", role: .destructive) {
+                            customReminderData = nil
+                        }
+                    }
+                }
             }
-            .navigationTitle("Nouveau protocole")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fermer") { isPresented = false } } }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    SheetHeader(
+                        title: "Nouveau protocole",
+                        leadingTitle: "Annuler",
+                        onLeading: { isPresented = false },
+                        trailingTitle: "Enregistrer",
+                        onTrailing: { saveProtocol() },
+                        trailingDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+                }
+            }
             .sheet(isPresented: $showingTemplates) {
                 TemplatesSheet { tmpl in
                     name = tmpl.name
@@ -88,6 +146,7 @@ struct ProtocolOnboardingView: View {
                     frequency = tmpl.frequency
                     hour = tmpl.hour
                     minute = tmpl.minute
+                    didSelectTemplate = true
                 }
             }
             .sheet(isPresented: $showingCategory) {
@@ -106,11 +165,35 @@ struct ProtocolOnboardingView: View {
                 }
                 .withSheetDetentsIfAvailable()
             }
+            .sheet(isPresented: $showingCustomReminderSheet) {
+                ReminderSheet(initialData: customReminderData ?? defaultCustomReminderData()) { data in
+                    customReminderData = data
+                }
+                .withSheetDetentsIfAvailable()
+            }
+            .confirmationDialog(
+                "Enregistrer dans les modèles ?",
+                isPresented: $showSaveTemplatePrompt,
+                titleVisibility: .visible
+            ) {
+                Button("Créer uniquement") {
+                    finalizeCreate(saveAsTemplate: false)
+                }
+                Button("Créer + enregistrer le modèle") {
+                    finalizeCreate(saveAsTemplate: true)
+                }
+                Button("Annuler", role: .cancel) {
+                    pendingProtocolForCreate = nil
+                    pendingReminderForCreate = nil
+                }
+            } message: {
+                Text("Voulez-vous ajouter ce protocole à votre base de modèles personnalisés ?")
+            }
         }
         .withSheetDetentsIfAvailable()
     }
 
-    private func create() {
+    private func saveProtocol() {
         let item = ProtocolItem(name: name.isEmpty ? "Protocole" : name,
                                  detail: detail.isEmpty ? nil : detail,
                                  goal: nil,
@@ -126,11 +209,43 @@ struct ProtocolOnboardingView: View {
                                  active: true,
                                  activationSpans: [],
                                  category: category.isEmpty ? nil : category)
-        onCreate(item)
-        if reminders {
-            NotificationService.shared.scheduleDailyReminder(id: "protocol-\(item.id.uuidString)", title: item.name, hour: hour, minute: minute)
+
+        if shouldProposeTemplateSave(for: item) {
+            pendingProtocolForCreate = item
+            pendingReminderForCreate = customReminderData
+            showSaveTemplatePrompt = true
+            return
         }
+        finalizeCreate(item: item, reminder: customReminderData, saveAsTemplate: false)
+    }
+
+    private func finalizeCreate(saveAsTemplate: Bool) {
+        guard let item = pendingProtocolForCreate else { return }
+        finalizeCreate(item: item, reminder: pendingReminderForCreate, saveAsTemplate: saveAsTemplate)
+        pendingProtocolForCreate = nil
+        pendingReminderForCreate = nil
+    }
+
+    private func finalizeCreate(item: ProtocolItem, reminder: ReminderSheet.ReminderData?, saveAsTemplate: Bool) {
+        if saveAsTemplate {
+            _ = state.addProtocolTemplate(from: item)
+        }
+        // Always route protocol reminders through the persisted Reminder model so they can
+        // be edited/cancelled later and don't become orphan notifications.
+        let managedReminder = reminder ?? (reminders ? defaultCustomReminderData() : nil)
+        onCreate(item, managedReminder)
         isPresented = false
+    }
+
+    private func shouldProposeTemplateSave(for item: ProtocolItem) -> Bool {
+        guard !didSelectTemplate else { return false }
+        let normalizedName = normalized(item.name)
+        guard !normalizedName.isEmpty else { return false }
+
+        let existsInBuiltIn = protocolTemplateLibrary.contains { normalized($0.name) == normalizedName }
+        if existsInBuiltIn { return false }
+
+        return !state.hasProtocolTemplate(named: item.name)
     }
 
     private func labelForFrequency(_ f: Frequency) -> String {
@@ -139,6 +254,114 @@ struct ProtocolOnboardingView: View {
         case .timesPerDay(let n): return n <= 1 ? "1 fois/jour" : "\(n) fois/jour"
         case .weekly(let days): return days.isEmpty ? "Si besoin" : "Jours spécifiques"
         }
+    }
+
+    private var protocolSuggestions: [ProtocolTemplate] {
+        let query = normalized(name)
+        let compactQuery = compact(query)
+        guard compactQuery.count >= 4 else { return [] }
+
+        return availableProtocolTemplates
+            .filter { template in
+                let candidate = normalized(template.name)
+                let compactCandidate = compact(candidate)
+                guard compactCandidate != compactQuery else { return false }
+                return candidate.contains(query) || compactCandidate.contains(compactQuery)
+            }
+            .sorted { lhs, rhs in
+                let lhsName = normalized(lhs.name)
+                let rhsName = normalized(rhs.name)
+                let lhsPrefix = lhsName.hasPrefix(query)
+                let rhsPrefix = rhsName.hasPrefix(query)
+                if lhsPrefix != rhsPrefix { return lhsPrefix && !rhsPrefix }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    private func applyProtocolSuggestion(_ template: ProtocolTemplate) {
+        name = template.name
+        if detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            detail = template.goal
+        }
+        if category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || category == "Autre" {
+            category = template.category
+        }
+        if minutes == 10 {
+            minutes = template.minutes
+        }
+        frequency = template.frequency
+        hour = template.hour
+        minute = template.minute
+        didSelectTemplate = true
+    }
+
+    private func defaultCustomReminderData() -> ReminderSheet.ReminderData {
+        let protocolName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let reminderTitle = protocolName.isEmpty ? "Lancer ce protocole" : "Lancer \(protocolName)"
+        let defaultTime = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+        return ReminderSheet.ReminderData(
+            title: reminderTitle,
+            time: defaultTime,
+            days: Set(1...7),
+            description: "",
+            notificationsEnabled: true
+        )
+    }
+
+    private func customReminderSummary(_ data: ReminderSheet.ReminderData) -> String {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: data.time)
+        let summaryTime = String(format: "%02d:%02d", comps.hour ?? 8, comps.minute ?? 0)
+        let daysText = data.days.isEmpty ? "Tous les jours" : "\(data.days.count) jour(s)"
+        return "\(data.title) • \(summaryTime) • \(daysText)"
+    }
+
+    private func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+    }
+
+    private func compact(_ value: String) -> String {
+        value.unicodeScalars
+            .filter { CharacterSet.alphanumerics.contains($0) }
+            .map(String.init)
+            .joined()
+    }
+
+    private var availableProtocolTemplates: [ProtocolTemplate] {
+        var merged: [ProtocolTemplate] = []
+        var seen: Set<String> = []
+        for template in protocolTemplateLibrary {
+            let key = normalized(template.name)
+            if seen.insert(key).inserted {
+                merged.append(template)
+            }
+        }
+        for custom in state.customProtocolTemplates {
+            let key = normalized(custom.name)
+            if seen.insert(key).inserted {
+                let detail = custom.detail?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let fallbackDetail = "Modèle personnalisé"
+                merged.append(
+                    ProtocolTemplate(
+                        id: "custom-\(custom.id.uuidString)",
+                        name: custom.name,
+                        goal: (detail?.isEmpty == false ? detail! : fallbackDetail),
+                        intervention: (detail?.isEmpty == false ? detail! : fallbackDetail),
+                        category: custom.category,
+                        minutes: max(1, custom.minutes),
+                        frequency: custom.frequency,
+                        hour: max(0, min(custom.hour, 23)),
+                        minute: max(0, min(custom.minute, 59)),
+                        isUserDefined: true
+                    )
+                )
+            }
+        }
+        return merged
     }
 }
 
