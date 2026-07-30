@@ -73,29 +73,30 @@ jobs:
             --cellularBars 4
 
           mkdir -p AppStoreScreenshots/fr-FR
-          xcrun simctl launch "$device_id" com.fabienlopes.biotrack \
-            -appStoreScreenshots \
-            -hasCompletedInitialOnboarding YES \
-            -AppleLanguages "(fr)" \
-            -AppleLocale "fr_FR"
-          sleep 4
-          xcrun simctl io "$device_id" screenshot --type=jpeg \
-            AppStoreScreenshots/fr-FR/01-checklist.jpg
+          capture_tab() {
+            local tab="$1"
+            local filename="$2"
+            local settle_time="$3"
 
-          xcrun simctl openurl "$device_id" biotrack://track
-          sleep 2
-          xcrun simctl io "$device_id" screenshot --type=jpeg \
-            AppStoreScreenshots/fr-FR/02-suivi.jpg
+            xcrun simctl terminate "$device_id" com.fabienlopes.biotrack \
+              >/dev/null 2>&1 || true
+            xcrun simctl launch "$device_id" com.fabienlopes.biotrack \
+              -appStoreScreenshots \
+              -hasCompletedInitialOnboarding YES \
+              -selectedTab "$tab" \
+              -AppleLanguages "(fr)" \
+              -AppleLocale "fr_FR"
+            sleep "$settle_time"
+            xcrun simctl io "$device_id" screenshot --type=jpeg \
+              "AppStoreScreenshots/fr-FR/$filename"
+          }
 
-          xcrun simctl openurl "$device_id" biotrack://stats
-          sleep 3
-          xcrun simctl io "$device_id" screenshot --type=jpeg \
-            AppStoreScreenshots/fr-FR/03-statistiques.jpg
-
-          xcrun simctl openurl "$device_id" biotrack://protocols
-          sleep 2
-          xcrun simctl io "$device_id" screenshot --type=jpeg \
-            AppStoreScreenshots/fr-FR/04-protocoles.jpg
+          # Relaunching with the requested tab avoids the system confirmation
+          # sheet shown by simctl openurl for custom URL schemes.
+          capture_tab 0 "01-checklist.jpg" 4
+          capture_tab 1 "02-suivi.jpg" 3
+          capture_tab 2 "03-statistiques.jpg" 4
+          capture_tab 3 "04-protocoles.jpg" 3
 
           for image in AppStoreScreenshots/fr-FR/*.jpg; do
             dimensions="$(sips -g pixelWidth -g pixelHeight "$image")"
@@ -106,6 +107,18 @@ jobs:
               exit 1
             fi
           done
+
+          unique_count="$(
+            shasum -a 256 AppStoreScreenshots/fr-FR/*.jpg |
+              awk '{print $1}' |
+              sort -u |
+              wc -l |
+              tr -d ' '
+          )"
+          if [[ "$unique_count" -ne 4 ]]; then
+            echo "Expected four distinct screenshots, found $unique_count"
+            exit 1
+          fi
 
       - name: Upload App Store screenshots
         uses: actions/upload-artifact@v7
