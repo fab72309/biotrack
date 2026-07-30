@@ -40,10 +40,16 @@ final class AppState: ObservableObject {
     
     private let store = LocalStore.shared
     private var notificationObservers: [NSObjectProtocol] = []
+
+#if DEBUG
+    private var isAppStoreScreenshotMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("-appStoreScreenshots")
+    }
+#endif
     
     init() {
 #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-appStoreScreenshots") {
+        if isAppStoreScreenshotMode {
             loadAppStoreScreenshotFixture()
             observeExternalReminderUpdates()
             return
@@ -73,6 +79,11 @@ final class AppState: ObservableObject {
     }
     
     func load() {
+#if DEBUG
+        // Scene activation normally reloads the persisted store. During the
+        // deterministic App Store capture flow, that would erase the fixture.
+        guard !isAppStoreScreenshotMode else { return }
+#endif
         var s = store.load()
         MigrationService.migrate(&s)
         self.protocols = s.protocols
@@ -106,6 +117,11 @@ final class AppState: ObservableObject {
             enriched.correlationInsights = insights
             recommendations = RecommendationEngine.buildRecommendations(snapshot: enriched, now: Date())
         }
+#if DEBUG
+        // Keep generated release fixtures ephemeral and isolated from the
+        // simulator's persisted user store.
+        guard !isAppStoreScreenshotMode else { return }
+#endif
         var snap = LocalStore.Snapshot(schemaVersion: SnapshotSchemaVersion.current,
                                        protocols: protocols,
                                        customProtocolTemplates: customProtocolTemplates,
