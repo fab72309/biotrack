@@ -1,4 +1,4 @@
-# Métadonnées App Store — BioTrack 0.2.0
+# Métadonnées App Store — BioTrack 1.0.0
 
 Ce document regroupe les champs prêts à copier dans App Store Connect. La langue
 principale proposée est le français.
@@ -9,9 +9,13 @@ principale proposée est le français.
 - Sous-titre : `Routines & données privées`
 - Catégorie principale : `Santé et remise en forme`
 - Catégorie secondaire proposée : `Style de vie`
+- Classification calculée : `9+` (sujets de santé et de bien-être, sans
+  diagnostic ni traitement)
+- Plateforme publiée : `iPhone` (Mac Apple Silicon et Vision Pro désactivés
+  faute de validation dédiée)
 - Copyright : `2026 Fabien LOPES`
-- Version : `0.2.0`
-- Build : `2`
+- Version : `1.0.0`
+- Build : `3`
 - Bundle ID : `com.fabienlopes.biotrack`
 - SKU proposé si aucune fiche n’existe : `BIOTRACK-IOS-001`
 
