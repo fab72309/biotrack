@@ -1,4 +1,4 @@
-# BioTrack 0.2.0 — préparation App Store
+# BioTrack 1.0.0 — préparation App Store
 
 ## Texte “Nouveautés” proposé
 
@@ -38,7 +38,7 @@ BioTrack utilise CryptoKit pour une sauvegarde locale AES-GCM protégée par phr
 - Valider l’archive avant upload.
 - Renseigner captures, description, mots-clés, catégorie, âge et coordonnées App Review.
 - Répondre au questionnaire export compliance avec le comportement réel.
-- Envoyer d’abord sur TestFlight, puis associer le build `0.2.0 (2)` à la version App Store.
+- Envoyer d’abord sur TestFlight, puis associer le build `1.0.0 (3)` à la version App Store.
 
 ## Google Play — préparation d’une future version Android
 

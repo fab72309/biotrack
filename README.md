@@ -4,7 +4,7 @@
 
 BioTrack est une application SwiftUI de suivi personnel centrée sur les routines, métriques, check-ins, protocoles et suppléments. Les données restent sur l’appareil, sans compte ni backend BioTrack.
 
-La version 0.2.0 ajoute un moteur d’associations statistiques robuste, des graphiques accessibles, des expériences N-of-1, HealthKit en lecture, des widgets, les Live Activities et des sauvegardes chiffrées.
+La version 1.0.0 inaugure la première édition publique de BioTrack avec un moteur d’associations statistiques robuste, des graphiques accessibles, des expériences N-of-1, HealthKit en lecture, des widgets, les Live Activities et des sauvegardes chiffrées.
 
 ## Quickstart
 

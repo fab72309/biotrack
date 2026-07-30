@@ -35,6 +35,8 @@
 	<false/>
 	<key>NSHealthShareUsageDescription</key>
 	<string>BioTrack lit vos données Santé (sommeil, pas, poids, fréquence cardiaque au repos, HRV) pour pré-remplir vos métriques.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>BioTrack ne modifie aucune donnée Santé. Cette déclaration est requise par HealthKit ; l’app utilise Santé uniquement en lecture, avec votre accord, pour pré-remplir localement vos métriques.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

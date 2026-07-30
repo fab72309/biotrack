@@ -108,12 +108,17 @@ Note:
 ## Métadonnées et captures
 
 - [x] textes App Store et notes de revue préparés dans
-  `docs/app-store-metadata-0.2.0.md` ;
+  `docs/app-store-metadata-1.0.0.md` ;
 - [x] workflow reproductible de captures iPhone 6,9 pouces ajouté ;
-- [ ] exécuter le workflow et inspecter visuellement les quatre images ;
-- [ ] charger les captures dans App Store Connect ;
-- [ ] renseigner la confidentialité, le classement d’âge et les coordonnées de
-  revue.
+- [x] workflow exécuté et quatre images inspectées visuellement ;
+- [x] quatre captures chargées dans App Store Connect ;
+- [x] tarification gratuite et disponibilité dans 175 pays ou régions
+  configurées ;
+- [x] classification d’âge 9+ enregistrée pour le contenu de santé et de
+  bien-être ;
+- [ ] publier la déclaration de confidentialité après confirmation du titulaire ;
+- [ ] renseigner les coordonnées de revue ;
+- [ ] associer le build traité et soumettre à App Review.
 
 ## Definition of done (Priorite 1)
 

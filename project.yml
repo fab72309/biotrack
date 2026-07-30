@@ -32,6 +32,7 @@ targets:
         NSSupportsLiveActivitiesFrequentUpdates: true
         ITSAppUsesNonExemptEncryption: false
         NSHealthShareUsageDescription: "BioTrack lit vos données Santé (sommeil, pas, poids, fréquence cardiaque au repos, HRV) pour pré-remplir vos métriques."
+        NSHealthUpdateUsageDescription: "BioTrack ne modifie aucune donnée Santé. Cette déclaration est requise par HealthKit ; l’app utilise Santé uniquement en lecture, avec votre accord, pour pré-remplir localement vos métriques."
         CFBundleURLTypes:
           - CFBundleURLName: com.fabienlopes.biotrack
             CFBundleURLSchemes:
@@ -48,8 +49,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack
-        CURRENT_PROJECT_VERSION: 2
-        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 1.0.0
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
   BioTrackWidgetExtension:
@@ -78,8 +79,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack.widget
-        CURRENT_PROJECT_VERSION: 2
-        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 1.0.0
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:
       - sdk: WidgetKit.framework

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0 — 2026-07-30
+
+### Première publication publique
+
+- Alignement de la version App Store et du binaire sur `1.0.0 (3)`.
+- Préparation de la première soumission publique de BioTrack.
+- Normalisation de l’icône App Store 1024 × 1024 pour garantir sa détection
+  pendant la compilation et la validation Apple.
+- Ajout du texte d’usage HealthKit exigé par Apple, avec mention explicite que
+  BioTrack n’écrit aucune donnée dans Santé.
+- Reprise des améliorations statistiques, graphiques, d’accessibilité et de
+  confidentialité validées dans la version candidate 0.2.0.
+
 ## 0.2.0 — 2026-07-26
 
 ### Nouveautés
