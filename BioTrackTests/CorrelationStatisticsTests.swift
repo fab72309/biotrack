@@ -41,6 +41,44 @@ final class CorrelationStatisticsTests: XCTestCase {
         XCTAssertEqual(adjusted[2], 0.04, accuracy: 0.000_001)
     }
 
+    func testEffectiveSampleSizePenalizesAutocorrelatedSeries() throws {
+        let x = (0..<40).map { index in
+            Double(index) * 0.08 + sin(Double(index) / 8)
+        }
+        let y = x.enumerated().map { index, value in
+            value * 1.8 + cos(Double(index) / 6) * 0.05
+        }
+
+        let estimate = try XCTUnwrap(CorrelationStatistics.estimate(x: x, y: y))
+
+        XCTAssertLessThan(estimate.effectiveSampleSize, estimate.sampleSize)
+        XCTAssertGreaterThanOrEqual(estimate.effectiveSampleSize, 4)
+    }
+
+    func testTrendAdjustedCorrelationRejectsPureSharedLinearTrend() throws {
+        let x = (0..<20).map(Double.init)
+        let y = x.map { $0 * 4 + 12 }
+
+        let estimate = try XCTUnwrap(CorrelationStatistics.estimate(x: x, y: y))
+
+        XCTAssertNil(estimate.trendAdjustedPearson)
+        XCTAssertFalse(estimate.trendAgreementIsAcceptable)
+    }
+
+    func testRobustStandardScoresCenterAndLimitTheDisplay() {
+        let scores = CorrelationStatistics.robustStandardScores([1, 2, 3, 4, 100])
+
+        XCTAssertEqual(scores.count, 5)
+        XCTAssertEqual(scores[2], 0, accuracy: 0.000_001)
+        XCTAssertEqual(scores[4], 3, accuracy: 0.000_001)
+        XCTAssertEqual(scores[1], -scores[3], accuracy: 0.000_001)
+        XCTAssertLessThan(scores[0], scores[1])
+        XCTAssertEqual(
+            CorrelationStatistics.robustStandardScores([5, 5, 5]),
+            [0, 0, 0]
+        )
+    }
+
     func testLegacyInsightDecodesWithoutNewEvidenceFields() throws {
         let metricA = UUID()
         let metricB = UUID()
@@ -59,8 +97,10 @@ final class CorrelationStatisticsTests: XCTestCase {
 
         let insight = try JSONDecoder().decode(CorrelationInsight.self, from: json)
         XCTAssertNil(insight.spearman)
+        XCTAssertNil(insight.trendAdjustedPearson)
         XCTAssertNil(insight.confidenceLower)
         XCTAssertNil(insight.adjustedPValue)
+        XCTAssertNil(insight.effectiveSampleSize)
         XCTAssertNil(insight.evidence)
     }
 }

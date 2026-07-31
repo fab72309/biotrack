@@ -30,9 +30,11 @@ public struct CorrelationInsight: Identifiable, Codable, Equatable {
     public var sampleSize: Int
     public var summary: String
     public var spearman: Double? = nil
+    public var trendAdjustedPearson: Double? = nil
     public var confidenceLower: Double? = nil
     public var confidenceUpper: Double? = nil
     public var adjustedPValue: Double? = nil
+    public var effectiveSampleSize: Int? = nil
     public var evidence: CorrelationEvidence? = nil
 }
 

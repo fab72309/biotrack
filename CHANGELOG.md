@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.1.0 — 2026-07-31
+
+### Statistiques et graphiques
+
+- Les associations temporelles pénalisent désormais l’autocorrélation et
+  affichent le nombre de journées réellement utiles à l’analyse.
+- Un contrôle sans tendance générale écarte les associations qui ne reposent
+  que sur deux séries évoluant parallèlement avec le temps.
+- Les comparaisons entre unités différentes utilisent une standardisation
+  robuste centrée sur la médiane, avec les valeurs réelles conservées dans les
+  info-bulles.
+- Les courbes distinguent les journées sans mesure, les barres positives et
+  négatives partent correctement de zéro, et les légendes combinent couleur,
+  symbole et style.
+- Les détails d’association affichent Pearson, Spearman, la corrélation sans
+  tendance, l’intervalle de confiance et la valeur ajustée pour les
+  comparaisons multiples.
+
+### Qualité
+
+- Version et build synchronisés entre l’app et le widget : `1.1.0 (4)`.
+- Onze tests unitaires couvrent le moteur statistique, dont les tendances
+  trompeuses, l’autocorrélation et la standardisation robuste.
+- Ajout d’un mode de capture de développement reproductible pour contrôler les
+  graphiques multi-métriques en courbes et en barres.
+
 ## 1.0.0 — 2026-07-30
 
 ### Première publication publique

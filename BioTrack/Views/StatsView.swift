@@ -50,7 +50,7 @@ struct StatsView: View {
             .withSheetDetentsIfAvailable()
         }
         .onAppear {
-            if selectedMetric == nil {
+            if !applyScreenshotMetricSelectionIfRequested(), selectedMetric == nil {
                 selectedMetric = metricsForSelection().first(where: { hasData(for: $0) }) ?? metricsForSelection().first
             }
             if selectedMetricIds.isEmpty, let first = selectedMetric { selectedMetricIds = [first.id] }
@@ -198,10 +198,10 @@ struct StatsView: View {
                         }
                         let metricsList = metricsListForDisplay(baseMetric: m)
                         let primaryMetric = metricsList.first ?? m
-                        let isNormalizedComparison = shouldNormalizeMetricsComparison(metricsList: metricsList)
-                        let series = buildSeries(from: metricsList, normalizeMetrics: isNormalizedComparison)
-                        let forcedRange = isNormalizedComparison
-                        ? (0.0 as Double?, 100.0 as Double?)
+                        let isStandardizedComparison = shouldNormalizeMetricsComparison(metricsList: metricsList)
+                        let series = buildSeries(from: metricsList, normalizeMetrics: isStandardizedComparison)
+                        let forcedRange = isStandardizedComparison
+                        ? (-3.0 as Double?, 3.0 as Double?)
                         : forcedYRange(for: primaryMetric, series: series)
 
                         if series.allSatisfy({ $0.points.isEmpty }) {
@@ -212,22 +212,44 @@ struct StatsView: View {
                             .frame(maxWidth: .infinity, minHeight: 220)
                         } else {
                             VStack(spacing: 8) {
+                                if isStandardizedComparison {
+                                    Label(
+                                        "Unités différentes : chaque série est centrée sur sa médiane et affichée en écarts standardisés, limités visuellement à ±3. Les valeurs réelles restent accessibles au toucher.",
+                                        systemImage: "equal.circle"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                }
                                 legendRow(series: series)
                                 MultiSeriesChart(
                                     series: series,
                                     style: chartStyle,
-                                    unit: isNormalizedComparison ? "Indice (0-100)" : unitLabel(baseMetric: primaryMetric),
-                                    yAxisMode: yAxisMode(for: primaryMetric, isNormalizedComparison: isNormalizedComparison),
+                                    unit: isStandardizedComparison ? "Écart standardisé" : unitLabel(baseMetric: primaryMetric),
+                                    yAxisMode: yAxisMode(for: primaryMetric, isNormalizedComparison: isStandardizedComparison),
                                     ticks: customTicks(),
                                     yMinForced: forcedRange.0,
                                     yMaxForced: forcedRange.1,
-                                    valueFormatter: isNormalizedComparison ? nil : valueFormatterForMetric(primaryMetric),
-                                    avgLineValue: isNormalizedComparison ? nil : averageValue(for: primaryMetric, series: series),
+                                    valueFormatter: isStandardizedComparison
+                                        ? { String(format: "%.1f", $0) }
+                                        : valueFormatterForMetric(primaryMetric),
+                                    avgLineValue: isStandardizedComparison || series.count > 1
+                                        ? nil
+                                        : averageValue(for: primaryMetric, series: series),
                                     showLegend: false
                                 )
                                 .frame(height: 300)
                                 .padding(.vertical, 6)
                                 .padding(.bottom, 12)
+                                if seriesContainTemporalGaps(series) {
+                                    Label(
+                                        "Les segments pointillés indiquent une ou plusieurs journées sans mesure.",
+                                        systemImage: "line.diagonal"
+                                    )
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                                 averageRow(for: primaryMetric, series: series)
                             }
                             if grouping == .metrics {
@@ -287,7 +309,7 @@ struct StatsView: View {
                     .accessibilityLabel("Recalculer les associations")
             }
             Label(
-                "Une association aide à formuler une hypothèse, mais ne prouve jamais qu’une métrique en cause une autre.",
+                "Une association aide à formuler une hypothèse, mais ne prouve jamais qu’une métrique en cause une autre. BioTrack contrôle aussi la tendance générale et l’autocorrélation temporelle.",
                 systemImage: "info.circle"
             )
             .font(.caption)
@@ -301,7 +323,7 @@ struct StatsView: View {
                         .foregroundColor(.secondary)
                     Text("Aucun signal suffisamment étayé")
                         .font(.subheadline.weight(.semibold))
-                    Text("Enregistrez au moins 12 jours communs pour deux métriques. BioTrack écarte les résultats instables et corrige les comparaisons multiples.")
+                    Text("Enregistrez au moins 12 jours communs pour deux métriques. BioTrack écarte les tendances trompeuses, pénalise les journées trop similaires entre elles et corrige les comparaisons multiples.")
                         .foregroundColor(.secondary)
                         .font(.caption)
                         .multilineTextAlignment(.center)
@@ -323,7 +345,10 @@ struct StatsView: View {
         let evidence = insight.evidence ?? .exploratory
         let color = evidenceColor(evidence)
         let spearman = insight.spearman ?? insight.pearson
+        let trendAdjusted = insight.trendAdjustedPearson ?? insight.pearson
+        let effectiveSampleSize = insight.effectiveSampleSize ?? insight.sampleSize
         let interval = confidenceIntervalText(insight)
+        let adjustedPValue = adjustedPValueText(insight)
 
         return VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -351,8 +376,11 @@ struct StatsView: View {
                 HStack(spacing: 12) {
                     correlationStat("Pearson r", value: String(format: "%.2f", insight.pearson))
                     correlationStat("Rang ρ", value: String(format: "%.2f", spearman))
-                    correlationStat("Jours", value: "\(insight.sampleSize)")
+                    correlationStat("Sans tendance r", value: String(format: "%.2f", trendAdjusted))
+                    correlationStat("Jours alignés", value: "\(insight.sampleSize)")
+                    correlationStat("Jours utiles", value: "\(effectiveSampleSize)")
                     correlationStat("IC 95 %", value: interval)
+                    correlationStat("q ajusté", value: adjustedPValue)
                 }
             }
         }
@@ -421,33 +449,39 @@ struct StatsView: View {
 
     // Moyenne pour la période et le regroupement
     private func averageRow(for metric: Metric, series: [ChartSeries]) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            Text("Moyenne sur la période : ")
-                .font(.subheadline).foregroundColor(.secondary)
-            switch grouping {
-            case .metrics:
-                ForEach(series) { s in
-                    let m = state.metrics.first(where: { $0.name == s.name }) ?? metric
-                    let vals = filteredEntries(for: m).map { $0.value }
-                    HStack(spacing: 6) {
-                        legendSymbol(for: s)
-                        if vals.isEmpty {
-                            Text("\(m.name): —")
-                        } else {
-                            let avg = vals.reduce(0, +) / Double(vals.count)
-                            Text("\(m.name): \(formatValue(avg, for: m))")
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .center, spacing: 16) {
+                Text("Moyenne sur la période :")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                switch grouping {
+                case .metrics:
+                    ForEach(series) { s in
+                        let m = state.metrics.first(where: { $0.name == s.name }) ?? metric
+                        let vals = filteredEntries(for: m).map { $0.value }
+                        HStack(spacing: 6) {
+                            legendSymbol(for: s)
+                            if vals.isEmpty {
+                                Text("\(m.name) : —")
+                            } else {
+                                let avg = vals.reduce(0, +) / Double(vals.count)
+                                Text("\(m.name) : \(formatValue(avg, for: m))")
+                            }
                         }
-                    }.font(.subheadline.weight(.semibold))
-                }
-            case .protocols, .supplements:
-                let all = series.flatMap { $0.points.map(\.displayValue) }
-                if all.isEmpty {
-                    Text("—").font(.subheadline.weight(.semibold))
-                } else {
-                    let avg = all.reduce(0, +) / Double(all.count)
-                    Text(String(format: "%.1f / jour", avg)).font(.subheadline.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
+                    }
+                case .protocols, .supplements:
+                    let all = series.flatMap { $0.points.map(\.displayValue) }
+                    if all.isEmpty {
+                        Text("—").font(.subheadline.weight(.semibold))
+                    } else {
+                        let avg = all.reduce(0, +) / Double(all.count)
+                        Text(String(format: "%.1f / jour", avg))
+                            .font(.subheadline.weight(.semibold))
+                    }
                 }
             }
+            .padding(.vertical, 2)
         }
     }
 
@@ -480,6 +514,34 @@ struct StatsView: View {
         state.metrics.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+
+    private func applyScreenshotMetricSelectionIfRequested() -> Bool {
+#if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        guard
+            let optionIndex = arguments.firstIndex(of: "-statsMetricCount"),
+            arguments.indices.contains(optionIndex + 1),
+            let requestedCount = Int(arguments[optionIndex + 1]),
+            requestedCount > 1
+        else {
+            return false
+        }
+
+        let availableMetrics = metricsForSelection()
+            .filter(hasData)
+            .prefix(min(requestedCount, 3))
+        guard let primaryMetric = availableMetrics.first else { return false }
+
+        selectedMetricIds = Set(availableMetrics.map(\.id))
+        selectedMetric = primaryMetric
+        if arguments.contains("-statsBarChart") {
+            chartStyle = .bar
+        }
+        return true
+#else
+        return false
+#endif
     }
 
     private func hasData(for metric: Metric) -> Bool {
@@ -598,20 +660,11 @@ struct StatsView: View {
             return metricsList.enumerated().map { idx, m in
                 let entries = dailyAverageEntries(filteredEntries(for: m))
                 let rawValues = entries.map(\.value)
-                let minRaw = rawValues.min() ?? 0
-                let maxRaw = rawValues.max() ?? 0
-                let points = entries.map { entry -> ChartPoint in
+                let displayValues = normalizeMetrics
+                    ? CorrelationStatistics.robustStandardScores(rawValues)
+                    : rawValues
+                let points = zip(entries, displayValues).map { entry, display -> ChartPoint in
                     let raw = entry.value
-                    let display: Double
-                    if normalizeMetrics {
-                        if abs(maxRaw - minRaw) < 1e-6 {
-                            display = 50
-                        } else {
-                            display = ((raw - minRaw) / (maxRaw - minRaw)) * 100
-                        }
-                    } else {
-                        display = raw
-                    }
                     return ChartPoint(date: entry.date, displayValue: display, rawValue: raw)
                 }
                 return ChartSeries(
@@ -797,6 +850,21 @@ struct StatsView: View {
         }
     }
 
+    private func seriesContainTemporalGaps(_ series: [ChartSeries]) -> Bool {
+        let calendar = Calendar.current
+        return series.contains { item in
+            let dates = item.points.map(\.date).sorted()
+            return zip(dates, dates.dropFirst()).contains { previous, current in
+                let days = calendar.dateComponents(
+                    [.day],
+                    from: calendar.startOfDay(for: previous),
+                    to: calendar.startOfDay(for: current)
+                ).day ?? 0
+                return days > 1
+            }
+        }
+    }
+
     private func legendSymbol(for series: ChartSeries) -> some View {
         let symbolName: String
         switch series.styleIndex % 3 {
@@ -853,6 +921,15 @@ struct StatsView: View {
             return "—"
         }
         return String(format: "[%.2f ; %.2f]", lower, upper)
+    }
+
+    private func adjustedPValueText(_ insight: CorrelationInsight) -> String {
+        guard let value = insight.adjustedPValue else { return "—" }
+        if value < 0.001 {
+            return "< 0,001"
+        }
+        return String(format: "%.3f", value)
+            .replacingOccurrences(of: ".", with: ",")
     }
 
     private func valueFormatterForMetric(_ m: Metric) -> ((Double) -> String)? {
