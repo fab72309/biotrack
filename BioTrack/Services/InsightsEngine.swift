@@ -64,8 +64,10 @@ enum InsightsEngine {
             return candidate.adjustedPValue <= 0.10 &&
                 abs(estimate.pearson) >= 0.30 &&
                 abs(estimate.spearman) >= 0.25 &&
+                estimate.effectiveSampleSize >= 8 &&
                 estimate.confidenceExcludesZero &&
-                estimate.rankAgreementIsAcceptable
+                estimate.rankAgreementIsAcceptable &&
+                estimate.trendAgreementIsAcceptable
         }
 
         let grouped = Dictionary(grouping: eligible) {
@@ -76,9 +78,10 @@ enum InsightsEngine {
             guard let best = group.max(by: { evidenceScore($0) < evidenceScore($1) }) else { return nil }
             let estimate = best.estimate
             let evidence = evidenceLevel(
-                sampleSize: estimate.sampleSize,
+                effectiveSampleSize: estimate.effectiveSampleSize,
                 pearson: estimate.pearson,
                 spearman: estimate.spearman,
+                trendAdjustedPearson: estimate.trendAdjustedPearson ?? 0,
                 adjustedPValue: best.adjustedPValue
             )
             return CorrelationInsight(
@@ -96,9 +99,11 @@ enum InsightsEngine {
                     sample: estimate.sampleSize
                 ),
                 spearman: estimate.spearman,
+                trendAdjustedPearson: estimate.trendAdjustedPearson,
                 confidenceLower: estimate.confidenceLower,
                 confidenceUpper: estimate.confidenceUpper,
                 adjustedPValue: best.adjustedPValue,
+                effectiveSampleSize: estimate.effectiveSampleSize,
                 evidence: evidence
             )
         }
@@ -149,7 +154,8 @@ enum InsightsEngine {
     private static func alignedPairs(mapA: [Date: Double], mapB: [Date: Double], lagDays: Int) -> [(Double, Double)] {
         let calendar = Calendar.current
         var pairs: [(Double, Double)] = []
-        for (day, valueA) in mapA {
+        for day in mapA.keys.sorted() {
+            guard let valueA = mapA[day] else { continue }
             // A positive lag means A is observed before B.
             let keyB = calendar.date(byAdding: .day, value: lagDays, to: day) ?? day
             if let valueB = mapB[keyB] {
@@ -197,31 +203,43 @@ enum InsightsEngine {
 
     private static func evidenceScore(_ candidate: CorrelationCandidate) -> Double {
         let estimate = candidate.estimate
-        let conservativeStrength = min(abs(estimate.pearson), abs(estimate.spearman))
+        let trendStrength = abs(estimate.trendAdjustedPearson ?? 0)
+        let conservativeStrength = min(
+            min(abs(estimate.pearson), abs(estimate.spearman)),
+            trendStrength
+        )
         let confidenceFloor = min(abs(estimate.confidenceLower), abs(estimate.confidenceUpper))
-        let sampleWeight = min(1, Double(estimate.sampleSize) / 30)
+        let sampleWeight = min(1, Double(estimate.effectiveSampleSize) / 30)
         let lagPenalty = Double(abs(candidate.lag)) * 0.02
         return conservativeStrength * 0.62 + confidenceFloor * 0.28 + sampleWeight * 0.10 - lagPenalty
     }
 
     private static func insightScore(_ insight: CorrelationInsight) -> Double {
         let rankStrength = abs(insight.spearman ?? insight.pearson)
-        let conservativeStrength = min(abs(insight.pearson), rankStrength)
+        let trendStrength = abs(insight.trendAdjustedPearson ?? 0)
+        let conservativeStrength = min(
+            min(abs(insight.pearson), rankStrength),
+            trendStrength
+        )
         let confidenceFloor = min(abs(insight.confidenceLower ?? 0), abs(insight.confidenceUpper ?? 0))
         return conservativeStrength * 0.7 + confidenceFloor * 0.3
     }
 
     private static func evidenceLevel(
-        sampleSize: Int,
+        effectiveSampleSize: Int,
         pearson: Double,
         spearman: Double,
+        trendAdjustedPearson: Double,
         adjustedPValue: Double
     ) -> CorrelationEvidence {
-        let conservativeStrength = min(abs(pearson), abs(spearman))
-        if sampleSize >= 30, conservativeStrength >= 0.50, adjustedPValue <= 0.01 {
+        let conservativeStrength = min(
+            min(abs(pearson), abs(spearman)),
+            abs(trendAdjustedPearson)
+        )
+        if effectiveSampleSize >= 30, conservativeStrength >= 0.50, adjustedPValue <= 0.01 {
             return .strong
         }
-        if sampleSize >= 20, conservativeStrength >= 0.40, adjustedPValue <= 0.05 {
+        if effectiveSampleSize >= 20, conservativeStrength >= 0.40, adjustedPValue <= 0.05 {
             return .moderate
         }
         return .exploratory

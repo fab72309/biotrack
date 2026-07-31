@@ -59,6 +59,33 @@ final class InsightsEngineTests: XCTestCase {
         XCTAssertEqual(insight.lagDays, 1)
         XCTAssertGreaterThan(insight.pearson, 0.99)
         XCTAssertGreaterThan(insight.spearman ?? 0, 0.99)
+        XCTAssertGreaterThan(insight.trendAdjustedPearson ?? 0, 0.99)
+        XCTAssertGreaterThanOrEqual(insight.effectiveSampleSize ?? 0, 8)
         XCTAssertTrue(insight.summary.contains("Routine précède de 1 jour"))
+    }
+
+    func testEngineRejectsCorrelationCreatedOnlyByACommonLinearTrend() throws {
+        let metricA = Metric(name: "Temps", kind: .number, unit: "score")
+        let metricB = Metric(name: "Autre tendance", kind: .number, unit: "score")
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date())
+        let firstDay = try XCTUnwrap(calendar.date(byAdding: .day, value: -30, to: today))
+        var entries: [MetricEntry] = []
+
+        for index in 0..<30 {
+            let date = try XCTUnwrap(calendar.date(byAdding: .day, value: index, to: firstDay))
+            entries.append(MetricEntry(metricId: metricA.id, date: date, value: Double(index)))
+            entries.append(MetricEntry(metricId: metricB.id, date: date, value: Double(index) * 5 + 20))
+        }
+
+        let snapshot = BioTrackSnapshot(metrics: [metricA, metricB], metricEntries: entries)
+        let insights = InsightsEngine.generateCorrelationInsights(
+            snapshot: snapshot,
+            windowDays: 90,
+            minSampleSize: 12,
+            lags: [0]
+        )
+
+        XCTAssertTrue(insights.isEmpty)
     }
 }

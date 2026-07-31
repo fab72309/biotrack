@@ -49,6 +49,15 @@ struct MultiSeriesChart: View {
 						if style == .line {
 							ForEach(series) { s in
 								if series.count == 1 { areaPath(s, in: rect).fill(s.color.opacity(0.12)) }
+								gapPath(s, in: rect)
+									.stroke(
+										s.color.opacity(0.28),
+										style: StrokeStyle(
+											lineWidth: 1.2,
+											lineCap: .round,
+											dash: [1, 5]
+										)
+									)
 								linePath(s, in: rect)
 									.stroke(
 										s.color,
@@ -157,21 +166,57 @@ struct MultiSeriesChart: View {
 
 	private func linePath(_ s: ChartSeries, in r: CGRect) -> Path {
 		var path = Path()
-		let pts = normalizedPoints(s.points, in: r)
-		guard let first = pts.first else { return path }
+		let sorted = s.points.sorted { $0.date < $1.date }
+		let pts = normalizedPoints(sorted, in: r)
+		guard let first = pts.first, let firstPoint = sorted.first else { return path }
 		path.move(to: first)
-		for p in pts.dropFirst() { path.addLine(to: p) }
+		var previousPoint = firstPoint
+		for (point, position) in zip(sorted.dropFirst(), pts.dropFirst()) {
+			if isConsecutiveDay(previousPoint.date, point.date) {
+				path.addLine(to: position)
+			} else {
+				path.move(to: position)
+			}
+			previousPoint = point
+		}
+		return path
+	}
+
+	private func gapPath(_ s: ChartSeries, in r: CGRect) -> Path {
+		var path = Path()
+		let sorted = s.points.sorted { $0.date < $1.date }
+		let pts = normalizedPoints(sorted, in: r)
+		guard sorted.count == pts.count, sorted.count >= 2 else { return path }
+
+		for index in 1..<sorted.count where !isConsecutiveDay(sorted[index - 1].date, sorted[index].date) {
+			path.move(to: pts[index - 1])
+			path.addLine(to: pts[index])
+		}
 		return path
 	}
 
 	private func areaPath(_ s: ChartSeries, in r: CGRect) -> Path {
 		var path = Path()
-		let pts = normalizedPoints(s.points, in: r)
-		guard let first = pts.first else { return path }
+		let sorted = s.points.sorted { $0.date < $1.date }
+		let pts = normalizedPoints(sorted, in: r)
+		guard let first = pts.first, let firstPoint = sorted.first else { return path }
 		path.move(to: CGPoint(x: first.x, y: r.height-bottomPadding))
 		path.addLine(to: first)
-		for p in pts.dropFirst() { path.addLine(to: p) }
-		if let last = pts.last { path.addLine(to: CGPoint(x: last.x, y: r.height-bottomPadding)) }
+		var previousPoint = firstPoint
+		var previousPosition = first
+		for (point, position) in zip(sorted.dropFirst(), pts.dropFirst()) {
+			if isConsecutiveDay(previousPoint.date, point.date) {
+				path.addLine(to: position)
+			} else {
+				path.addLine(to: CGPoint(x: previousPosition.x, y: r.height-bottomPadding))
+				path.closeSubpath()
+				path.move(to: CGPoint(x: position.x, y: r.height-bottomPadding))
+				path.addLine(to: position)
+			}
+			previousPoint = point
+			previousPosition = position
+		}
+		path.addLine(to: CGPoint(x: previousPosition.x, y: r.height-bottomPadding))
 		path.closeSubpath()
 		return path
 	}
@@ -191,7 +236,15 @@ struct MultiSeriesChart: View {
 		}
 		let groupWidth = max(8, slotWidth * 0.7)
 		let barWidth = max(4, min(22, groupWidth / CGFloat(max(series.count, 1))))
-		let baseY = r.height - bottomPadding
+		let (minimum, maximum) = yRange()
+		let baseY: CGFloat
+		if minimum <= 0, maximum >= 0 {
+			baseY = yPosition(for: 0, in: r)
+		} else if maximum < 0 {
+			baseY = topPadding
+		} else {
+			baseY = r.height - bottomPadding
+		}
 		return ZStack {
 			ForEach(Array(series.enumerated()), id: \.element.id) { (idx, s) in
 				let pts = normalizedPoints(s.points, in: r)
@@ -199,10 +252,12 @@ struct MultiSeriesChart: View {
 					Path { path in
 						let total = barWidth * CGFloat(series.count)
 						let xLeft = p.x - total/2 + CGFloat(idx) * barWidth
-						let rawH = baseY - p.y
+						let rawH = abs(baseY - p.y)
 						let minH: CGFloat = 2
 						let height = max(minH, rawH)
-						let yTop = rawH < minH ? baseY - minH : p.y
+						let yTop = rawH < minH
+							? baseY - minH / 2
+							: min(baseY, p.y)
 						path.addRect(CGRect(x: xLeft, y: yTop, width: barWidth-2, height: height))
 					}
 					.fill(s.color.opacity(0.85))
@@ -210,10 +265,12 @@ struct MultiSeriesChart: View {
 						Path { path in
 							let total = barWidth * CGFloat(series.count)
 							let xLeft = p.x - total/2 + CGFloat(idx) * barWidth
-							let rawH = baseY - p.y
+							let rawH = abs(baseY - p.y)
 							let minH: CGFloat = 2
 							let height = max(minH, rawH)
-							let yTop = rawH < minH ? baseY - minH : p.y
+							let yTop = rawH < minH
+								? baseY - minH / 2
+								: min(baseY, p.y)
 							path.addRect(CGRect(x: xLeft, y: yTop, width: barWidth-2, height: height))
 						}
 						.stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
@@ -332,6 +389,16 @@ struct MultiSeriesChart: View {
 		return leftPadding + CGFloat((clamped.timeIntervalSince1970 - firstDay.timeIntervalSince1970)/total) * plotWidth
 	}
 
+	private func isConsecutiveDay(_ first: Date, _ second: Date) -> Bool {
+		let calendar = Calendar.current
+		let difference = calendar.dateComponents(
+			[.day],
+			from: calendar.startOfDay(for: first),
+			to: calendar.startOfDay(for: second)
+		).day ?? 0
+		return difference <= 1
+	}
+
 	private func updateHover(at location: CGPoint, in r: CGRect) {
 		// Build all normalized points with metadata
 		var candidates: [(CGPoint, String, CGFloat)] = []
@@ -397,12 +464,21 @@ struct MultiSeriesChart: View {
 		let (minV, maxV) = yRange()
 		guard minV.isFinite, maxV.isFinite else { return [0, 1] }
 		guard maxV > minV else { return [minV] }
+		if yMinForced != nil, yMaxForced != nil {
+			let intervalCount = 4
+			let step = (maxV - minV) / Double(intervalCount)
+			return (0...intervalCount).map { roundTick(minV + Double($0) * step) }
+		}
+
+		let ticks: [Double]
 		switch yAxisMode {
 		case .durationMinutes:
-			return durationTicks(minValue: minV, maxValue: maxV)
+			ticks = durationTicks(minValue: minV, maxValue: maxV)
 		case .numeric:
-			return numericTicks(minValue: minV, maxValue: maxV)
+			ticks = numericTicks(minValue: minV, maxValue: maxV)
 		}
+		let tolerance = max((maxV - minV) * 1e-9, 1e-9)
+		return ticks.filter { $0 >= minV - tolerance && $0 <= maxV + tolerance }
 	}
 
 	private func durationTicks(minValue: Double, maxValue: Double) -> [Double] {
@@ -562,7 +638,18 @@ struct MultiSeriesChart: View {
 			let unitSuffix = item.rawUnit.isEmpty ? "" : " \(item.rawUnit)"
 			return "\(item.name), \(direction), de \(firstValue)\(unitSuffix) à \(lastValue)\(unitSuffix)"
 		}
-		return summaries.isEmpty ? "Aucune donnée sur la période." : summaries.joined(separator: ". ")
+		guard !summaries.isEmpty else { return "Aucune donnée sur la période." }
+		let gapSuffix = series.contains(where: seriesHasTemporalGap)
+			? ". Le graphique contient des interruptions correspondant à des jours sans mesure."
+			: ""
+		return summaries.joined(separator: ". ") + gapSuffix
+	}
+
+	private func seriesHasTemporalGap(_ item: ChartSeries) -> Bool {
+		let dates = item.points.map(\.date).sorted()
+		return zip(dates, dates.dropFirst()).contains {
+			!isConsecutiveDay($0.0, $0.1)
+		}
 	}
 }
 

@@ -49,8 +49,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 4
+        MARKETING_VERSION: 1.1.0
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
   BioTrackWidgetExtension:
@@ -79,8 +79,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fabienlopes.biotrack.widget
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 4
+        MARKETING_VERSION: 1.1.0
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:
       - sdk: WidgetKit.framework
