@@ -9,6 +9,7 @@ enum BioTrackModalMetrics {
     static let cornerRadius: CGFloat = 28
     static let horizontalPadding: CGFloat = 20
     static let borderWidth: CGFloat = 0.75
+    static let closeButtonSize: CGFloat = 44
 }
 
 struct BioTrackPopupCard<Content: View>: View {
@@ -70,11 +71,13 @@ struct BioTrackModalCloseButton: View {
             Image(systemName: "xmark")
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(foregroundColor)
-                .frame(width: 34, height: 34)
+                .frame(width: BioTrackModalMetrics.closeButtonSize,
+                       height: BioTrackModalMetrics.closeButtonSize)
                 .background(backgroundColor, in: Circle())
                 .overlay(Circle().stroke(Color("Separator"), lineWidth: 0.5))
         }
         .buttonStyle(.plain)
+        .contentShape(Circle())
         .accessibilityLabel(Text(accessibilityLabel))
     }
 }

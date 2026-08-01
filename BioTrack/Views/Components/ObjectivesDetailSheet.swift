@@ -280,8 +280,8 @@ private extension ObjectivesDetailContent {
     }
 
     func interactiveCompactRow(title: String, isDone: Bool, toggle: @escaping () -> Void) -> some View {
-        HStack(spacing: 10) {
-            Button(action: toggle) {
+        Button(action: toggle) {
+            HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(isDone ? Color("Primary") : Color("Separator"), lineWidth: 2)
@@ -289,24 +289,34 @@ private extension ObjectivesDetailContent {
                         .frame(width: 22, height: 22)
                     if isDone { Image(systemName: "checkmark").font(.caption2).foregroundColor(Color("Primary")) }
                 }
+                Text(title)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
+                Image(systemName: isDone ? "checkmark.circle.fill" : "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isDone ? Color("Primary") : .secondary)
+                    .accessibilityHidden(true)
             }
-            .buttonStyle(.plain)
-            Text(title)
-                .font(.subheadline)
-                .lineLimit(1)
-            Spacer()
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color("Surface"))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(isDone ? Color("Primary").opacity(0.35) : Color("Separator"), lineWidth: 0.5)
+            )
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color("Surface"))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(isDone ? Color("Primary").opacity(0.35) : Color("Separator"), lineWidth: 0.5)
-        )
+        .buttonStyle(.plain)
         .padding(.horizontal, 16)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text(isDone ? "Terminé" : "À faire"))
+        .accessibilityHint(Text(isDone ? "Marquer comme à faire" : "Marquer comme terminé"))
     }
 }
 
@@ -417,7 +427,7 @@ private struct ProgressCircle: View {
 
     private var total: Int {
         let perDay = state.protocols.count + state.supplements.count
-        return max(1, perDay * max(1, days))
+        return perDay * max(1, days)
     }
     private var done: Int {
         let calendar = Calendar.current
@@ -450,7 +460,7 @@ private struct ProgressCircle: View {
             VStack(spacing: 4) {
                 Text(String(format: "%.0f%%", progress * 100))
                     .font(.title3.weight(.bold))
-                Text("\(done)/\(total)")
+                Text(total == 0 ? "Aucun objectif" : "\(done)/\(total)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -458,6 +468,8 @@ private struct ProgressCircle: View {
         .padding(12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Progression des objectifs")
-        .accessibilityValue("\(Int(progress * 100)) pour cent, \(done) sur \(total)")
+        .accessibilityValue(total == 0
+            ? "Aucun objectif configuré"
+            : "\(Int(progress * 100)) pour cent, \(done) sur \(total)")
     }
 }

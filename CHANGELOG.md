@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.1 — prochaine version
+
+### Fiabilité et performance
+
+- Les sauvegardes ne recalculent plus deux fois les associations après un
+  check-in.
+- Les mesures enregistrées plusieurs fois le même jour sont agrégées avant
+  l’analyse, afin d’éviter de surpondérer une journée.
+
+### Expérience utilisateur
+
+- Les fenêtres Objectifs et Hall des succès partagent une présentation plus
+  lisible, avec un bouton de fermeture facile à toucher et des actions
+  entièrement sélectionnables.
+- La progression indique clairement lorsqu’aucun objectif n’est configuré,
+  sans afficher de dénominateur artificiel.
+
 ## 1.2.0 — prochaine version
 
 ### Expérience utilisateur
