@@ -55,11 +55,27 @@ jobs:
       - name: Test correlation engine
         run: |
           set -o pipefail
+          test_device_id="$(
+            xcrun simctl list devices available --json |
+              jq -r '
+                .devices
+                | to_entries[]
+                | .value[]
+                | select(.name | startswith("iPhone"))
+                | select(.isAvailable == true)
+                | .udid
+              ' |
+              head -n 1
+          )"
+          if [[ -z "$test_device_id" ]]; then
+            echo "No available iPhone simulator found"
+            exit 1
+          fi
           xcodebuild \
             -project BioTrack.xcodeproj \
             -scheme BioTrack \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -destination "platform=iOS Simulator,id=$test_device_id" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
