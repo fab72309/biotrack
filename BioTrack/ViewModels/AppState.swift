@@ -110,38 +110,21 @@ final class AppState: ObservableObject {
     }
     
     func save(refreshInsights: Bool = true) {
+        var snapshot = buildSnapshot()
         if refreshInsights {
-            let insights = InsightsEngine.generateCorrelationInsights(snapshot: buildSnapshot(), windowDays: 90)
+            let insights = InsightsEngine.generateCorrelationInsights(snapshot: snapshot, windowDays: 90)
             correlationInsights = insights
-            var enriched = buildSnapshot()
-            enriched.correlationInsights = insights
-            recommendations = RecommendationEngine.buildRecommendations(snapshot: enriched, now: Date())
+            snapshot.correlationInsights = insights
+            recommendations = RecommendationEngine.buildRecommendations(snapshot: snapshot, now: Date())
+            snapshot.recommendations = recommendations
         }
 #if DEBUG
         // Keep generated release fixtures ephemeral and isolated from the
         // simulator's persisted user store.
         guard !isAppStoreScreenshotMode else { return }
 #endif
-        var snap = LocalStore.Snapshot(schemaVersion: SnapshotSchemaVersion.current,
-                                       protocols: protocols,
-                                       customProtocolTemplates: customProtocolTemplates,
-                                       protocolCompletions: protocolCompletions,
-                                       supplements: supplements,
-                                       customSupplementTemplates: customSupplementTemplates,
-                                       supplementIntakes: supplementIntakes,
-                                       metrics: metrics,
-                                       metricEntries: metricEntries,
-                                       reminders: reminders,
-                                       dailyCheckIns: dailyCheckIns,
-                                       routineProfiles: routineProfiles,
-                                       activeRoutineProfileKindRaw: activeRoutineProfileKindRaw,
-                                       experiments: experiments,
-                                       experimentObservations: experimentObservations,
-                                       adaptiveGoalPolicy: adaptiveGoalPolicy,
-                                       correlationInsights: correlationInsights,
-                                       recommendations: recommendations)
-        MigrationService.migrate(&snap)
-        store.save(snap)
+        MigrationService.migrate(&snapshot)
+        store.save(snapshot)
         WidgetRefresh.reloadAll()
     }
 
@@ -442,7 +425,7 @@ final class AppState: ObservableObject {
         }
         upsertCheckInMetricEntries(period: period, date: date, values: mergedMetricValues)
         LocalAnalyticsService.track("checkin_completed", metadata: ["period": period.rawValue])
-        refreshInsightsAndRecommendations()
+        // `save()` refreshes insights once; avoid doing the same work twice.
         save()
     }
 
