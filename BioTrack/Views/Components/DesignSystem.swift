@@ -1,5 +1,84 @@
 import SwiftUI
 
+// MARK: - Modal surfaces
+
+/// Shared visual language for the two custom, in-app popups.
+/// System sheets keep their native presentation chrome; overlay popups use
+/// `BioTrackPopupBackdrop` around the same card surface.
+enum BioTrackModalMetrics {
+    static let cornerRadius: CGFloat = 28
+    static let horizontalPadding: CGFloat = 20
+    static let borderWidth: CGFloat = 0.75
+}
+
+struct BioTrackPopupCard<Content: View>: View {
+    private let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: BioTrackModalMetrics.cornerRadius, style: .continuous)
+                .fill(Color("Surface"))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: BioTrackModalMetrics.cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: BioTrackModalMetrics.cornerRadius, style: .continuous)
+                .stroke(Color("Separator"), lineWidth: BioTrackModalMetrics.borderWidth)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+    }
+}
+
+struct BioTrackPopupBackdrop<Content: View>: View {
+    private let content: () -> Content
+    private let onDismiss: (() -> Void)?
+
+    init(onDismiss: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+        self.onDismiss = onDismiss
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.34)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { onDismiss?() }
+
+            content()
+                .frame(maxWidth: 520)
+                .padding(.horizontal, BioTrackModalMetrics.horizontalPadding)
+                .padding(.vertical, 28)
+        }
+    }
+}
+
+struct BioTrackModalCloseButton: View {
+    let action: () -> Void
+    var accessibilityLabel: String = "Fermer"
+    var foregroundColor: Color = .primary
+    var backgroundColor: Color = Color("Background")
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(foregroundColor)
+                .frame(width: 34, height: 34)
+                .background(backgroundColor, in: Circle())
+                .overlay(Circle().stroke(Color("Separator"), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(accessibilityLabel))
+    }
+}
+
 // MARK: - Sheet Header
 
 struct SheetHeader: View {
@@ -228,5 +307,3 @@ struct CategoryAppearance {
         }
     }
 }
-
-

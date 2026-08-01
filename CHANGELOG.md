@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 — prochaine version
+
+### Expérience utilisateur
+
+- Les fenêtres Objectifs et Hall des succès adoptent désormais une même
+  surface visuelle, avec une hiérarchie plus claire, des espacements réguliers
+  et des boutons de fermeture accessibles.
+- La fenêtre Objectifs utilise la présentation native iOS au lieu d’empiler
+  une seconde popup au-dessus de la feuille système.
+- Les actions sont regroupées dans des cartes lisibles et les périodes
+  Aujourd’hui, 7 jours et 30 jours sont directement sélectionnables.
+- Les états vides et la progression sont mieux expliqués, y compris avec les
+  technologies d’assistance.
+
 ## 1.1.0 — 2026-07-31
 
 ### Statistiques et graphiques
