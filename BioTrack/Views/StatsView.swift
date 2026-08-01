@@ -220,6 +220,14 @@ struct StatsView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
+                                } else if grouping != .metrics {
+                                    Label(
+                                        "Les jours planifiés sans réalisation apparaissent à zéro pour refléter la régularité réelle.",
+                                        systemImage: "calendar.badge.clock"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
                                 }
                                 legendRow(series: series)
                                 MultiSeriesChart(
@@ -236,12 +244,13 @@ struct StatsView: View {
                                     avgLineValue: isStandardizedComparison || series.count > 1
                                         ? nil
                                         : averageValue(for: primaryMetric, series: series),
-                                    showLegend: false
+                                    showLegend: false,
+                                    showTemporalGaps: grouping == .metrics
                                 )
                                 .frame(height: 300)
                                 .padding(.vertical, 6)
                                 .padding(.bottom, 12)
-                                if seriesContainTemporalGaps(series) {
+                                if grouping == .metrics && seriesContainTemporalGaps(series) {
                                     Label(
                                         "Les segments pointillés indiquent une ou plusieurs journées sans mesure.",
                                         systemImage: "line.diagonal"
@@ -458,7 +467,7 @@ struct StatsView: View {
                 case .metrics:
                     ForEach(series) { s in
                         let m = state.metrics.first(where: { $0.name == s.name }) ?? metric
-                        let vals = filteredEntries(for: m).map { $0.value }
+                        let vals = dailyAverageEntries(filteredEntries(for: m)).map(\.value)
                         HStack(spacing: 6) {
                             legendSymbol(for: s)
                             if vals.isEmpty {
@@ -500,7 +509,7 @@ struct StatsView: View {
     private func averageValue(for m: Metric, series: [ChartSeries]) -> Double? {
         switch grouping {
         case .metrics:
-            let vals = filteredEntries(for: m).map { $0.value }
+            let vals = dailyAverageEntries(filteredEntries(for: m)).map(\.value)
             guard !vals.isEmpty else { return nil }
             return vals.reduce(0, +) / Double(vals.count)
         case .protocols, .supplements:
@@ -678,7 +687,9 @@ struct StatsView: View {
                 )
             }
         case .protocols:
-            // construire une série 0/1 par protocole selon complétions (uniquement quand actif à la date)
+            // Construire une série par jour planifié, y compris les jours à zéro.
+            // Une journée sans complétion doit rester visible comme une absence,
+            // et non disparaître comme si elle n'existait pas.
             let ids = Set(state.protocolCompletions.map { $0.protocolId })
             let items = state.protocols.filter {
                 ids.contains($0.id) && (selectedProtocolId == nil || selectedProtocolId == $0.id)
@@ -686,9 +697,10 @@ struct StatsView: View {
             let palette = colorPalette()
             return items.enumerated().map { idx, p in
                 let comps = state.protocolCompletions.filter { $0.protocolId == p.id && $0.date >= startDate && p.isActive(on: $0.date) }
-                let grouped = Dictionary(grouping: comps) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { day in
-                    let value = Double(grouped[day]?.filter { $0.completed }.count ?? 0)
+                let completedByDay = Dictionary(grouping: comps.filter(\.completed)) { cal.startOfDay(for: $0.date) }
+                let points = daysBetween(start: startDate, end: Date()).compactMap { day -> ChartPoint? in
+                    guard p.isActive(on: day), isScheduled(p.frequency, on: day) else { return nil }
+                    let value = Double(completedByDay[cal.startOfDay(for: day)]?.count ?? 0)
                     return ChartPoint(date: day, displayValue: value, rawValue: value)
                 }
                 return ChartSeries(
@@ -709,9 +721,10 @@ struct StatsView: View {
             let palette = colorPalette()
             return items.enumerated().map { idx, s in
                 let ints = state.supplementIntakes.filter { $0.supplementId == s.id && $0.date >= startDate && s.isActive(on: $0.date) }
-                let grouped = Dictionary(grouping: ints) { cal.startOfDay(for: $0.date) }
-                let points = grouped.keys.sorted().map { day in
-                    let value = Double(grouped[day]?.filter { $0.taken }.count ?? 0)
+                let takenByDay = Dictionary(grouping: ints.filter(\.taken)) { cal.startOfDay(for: $0.date) }
+                let points = daysBetween(start: startDate, end: Date()).compactMap { day -> ChartPoint? in
+                    guard s.isActive(on: day), DailyPlanner.isScheduledToday(s.frequency, daysFallback: s.daysOfWeek, now: day) else { return nil }
+                    let value = Double(takenByDay[cal.startOfDay(for: day)]?.count ?? 0)
                     return ChartPoint(date: day, displayValue: value, rawValue: value)
                 }
                 return ChartSeries(
@@ -726,6 +739,31 @@ struct StatsView: View {
             }
         }
     }
+
+    private func daysBetween(start: Date, end: Date) -> [Date] {
+        let calendar = Calendar.current
+        let first = calendar.startOfDay(for: start)
+        let last = calendar.startOfDay(for: end)
+        var dates: [Date] = []
+        var current = first
+        while current <= last {
+            dates.append(current)
+            guard let next = calendar.date(byAdding: .day, value: 1, to: current), next > current else { break }
+            current = next
+        }
+        return dates
+    }
+
+    private func isScheduled(_ frequency: Frequency, on date: Date) -> Bool {
+        switch frequency {
+        case .daily, .timesPerDay:
+            return true
+        case .weekly(let days):
+            let selected = Set(days)
+            return selected.isEmpty || selected.contains(DailyPlanner.currentWeekdayMon1ToSun7(now: date))
+        }
+    }
+
     private func colorPalette() -> [Color] { [.blue, .green, .orange, .pink, .purple, .teal, .indigo, .brown, .mint, .red] }
 
     private func dateBounds() -> (Date, Date) {
