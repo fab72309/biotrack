@@ -818,20 +818,13 @@ private struct StreakAchievementsPopup: View {
         let todayTotal = todaySnapshot.progressTotal
         let completionRate = todayTotal == 0 ? 0 : Int((Double(todayDone) / Double(todayTotal)) * 100)
 
-        ZStack {
-            LinearGradient(
-                colors: [Color.black.opacity(0.55), Color.black.opacity(0.32)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isPresented = false
-                    }
-                }
-
-            VStack(spacing: 0) {
+        BioTrackPopupBackdrop(onDismiss: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isPresented = false
+            }
+        }) {
+            BioTrackPopupCard {
+                VStack(spacing: 0) {
                 ZStack(alignment: .topTrailing) {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(
@@ -848,16 +841,15 @@ private struct StreakAchievementsPopup: View {
                                 .font(.headline)
                                 .foregroundColor(Color("OnPrimary"))
                             Spacer()
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isPresented = false
-                                }
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.title3)
-                                    .foregroundColor(Color("OnPrimary").opacity(0.9))
-                            }
-                            .buttonStyle(.plain)
+                            BioTrackModalCloseButton(
+                                action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isPresented = false
+                                    }
+                                },
+                                foregroundColor: Color("OnPrimary"),
+                                backgroundColor: Color("Primary").opacity(0.28)
+                            )
                         }
 
                         HStack(alignment: .bottom) {
@@ -908,25 +900,9 @@ private struct StreakAchievementsPopup: View {
                         tint: Color(red: 0.96, green: 0.52, blue: 0.15)
                     )
                 }
-                .padding(16)
+                    .padding(16)
+                }
             }
-            .frame(maxWidth: 520)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(UIColor.systemBackground), Color("Surface").opacity(0.98)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
-            )
-            .padding(24)
-            .shadow(color: .black.opacity(0.32), radius: 26, x: 0, y: 16)
             .transition(.scale(scale: 0.95).combined(with: .opacity))
         }
     }

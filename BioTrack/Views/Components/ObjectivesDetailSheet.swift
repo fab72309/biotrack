@@ -63,7 +63,20 @@ struct ObjectivesDetailContent: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 if remainingCheckIns.isEmpty && remainingProtocols.isEmpty && remainingSupps.isEmpty {
-                    Text("Aucune action restante aujourd'hui").foregroundStyle(.secondary).padding(.horizontal, 16)
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(Color("Primary"))
+                        Text("Tout est à jour pour aujourd'hui")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Les objectifs terminés apparaîtront ci-dessous.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
                 }
                 if !remainingCheckIns.isEmpty {
                     Text("Check-ins").font(.subheadline.weight(.semibold)).padding(.horizontal, 16)
@@ -102,7 +115,7 @@ struct ObjectivesDetailContent: View {
                     }
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
         }
     }
 
@@ -126,9 +139,18 @@ struct ObjectivesDetailContent: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 14)
                     .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
+                    .padding(.horizontal, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color("Surface"))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color("Separator"), lineWidth: 0.5)
+                            .padding(.horizontal, 16)
+                    )
                 }
             }
             .padding(.vertical, 12)
@@ -244,9 +266,17 @@ private extension ObjectivesDetailContent {
             }
             Spacer()
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color("Surface"))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color("Separator"), lineWidth: 0.5)
+        )
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
     }
 
     func interactiveCompactRow(title: String, isDone: Bool, toggle: @escaping () -> Void) -> some View {
@@ -254,7 +284,7 @@ private extension ObjectivesDetailContent {
             Button(action: toggle) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(isDone ? Color("Primary") : Color(UIColor.separator), lineWidth: 2)
+                        .stroke(isDone ? Color("Primary") : Color("Separator"), lineWidth: 2)
                         .background(isDone ? Color("Primary").opacity(0.15) : Color.clear)
                         .frame(width: 22, height: 22)
                     if isDone { Image(systemName: "checkmark").font(.caption2).foregroundColor(Color("Primary")) }
@@ -266,69 +296,109 @@ private extension ObjectivesDetailContent {
                 .lineLimit(1)
             Spacer()
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color("Surface"))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(isDone ? Color("Primary").opacity(0.35) : Color("Separator"), lineWidth: 0.5)
+        )
         .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(UIColor.secondarySystemBackground)))
     }
 }
 
-// Popup-style container around ObjectivesDetailContent
+// Objectives detail presented as a native sheet. The sheet owns the surface;
+// no second dimmed card is drawn inside it.
 struct ObjectivesDetailPopup: View {
     @EnvironmentObject var state: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var pageIndex: Int = 0
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.4).ignoresSafeArea()
-            VStack(spacing: 0) {
-                // Header avec progression circulaire et titre centré
-                VStack(spacing: 8) {
-                    ZStack {
-                        Text(titleForPage(pageIndex)).font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        HStack { Spacer(); Button(action: { dismiss() }) { Image(systemName: "xmark") } }
-                    }
-                    .padding(.horizontal, 12)
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.35))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
 
-                    ProgressCircle(days: daysFor(pageIndex))
-                        .environmentObject(state)
-                        .frame(height: 140)
-                        .padding(.horizontal, 16)
-                    Text("Objectifs réalisés sur la période")
-                        .font(.caption)
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Objectifs")
+                        .font(.title3.weight(.bold))
+                    Text(titleForPage(pageIndex))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 12)
-
-                ObjectivesDetailContent(pageIndex: $pageIndex)
-                    .environmentObject(state)
-                    .frame(maxHeight: 420)
-
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { idx in
-                        Circle()
-                            .fill(idx == pageIndex ? Color("Primary") : Color.secondary.opacity(0.4))
-                            .frame(width: 8, height: 8)
-                    }
-                }
-                .padding(10)
+                Spacer()
+                BioTrackModalCloseButton { dismiss() }
             }
-            .frame(maxWidth: 520)
-            .background(
-                VStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(UIColor.systemBackground))
+            .padding(.horizontal, 20)
+
+            HStack(spacing: 16) {
+                ProgressCircle(days: daysFor(pageIndex))
+                    .environmentObject(state)
+                    .frame(width: 112, height: 112)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Progression", systemImage: "chart.pie.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color("Primary"))
+                    Text("Objectifs réalisés")
+                        .font(.headline)
+                    Text("Sur la période sélectionnée")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color("Background"))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color(UIColor.separator), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color("Separator"), lineWidth: 0.5)
             )
-            .padding(24)
-            .shadow(radius: 20)
-            .transition(.scale.combined(with: .opacity))
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+
+            ObjectivesDetailContent(pageIndex: $pageIndex)
+                .environmentObject(state)
+                .frame(maxHeight: .infinity)
+
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { idx in
+                    let label = ["Aujourd'hui", "7 jours", "30 jours"][idx]
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { pageIndex = idx }
+                    } label: {
+                        Text(label)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(idx == pageIndex ? Color("OnPrimary") : .secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                Capsule()
+                                    .fill(idx == pageIndex ? Color("Primary") : Color("Background"))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(idx == pageIndex ? [.isSelected] : [])
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
+        .background(Color("Background").ignoresSafeArea())
+        .withSheetDetentsIfAvailable()
     }
 
     private func titleForPage(_ index: Int) -> String {
@@ -371,10 +441,10 @@ private struct ProgressCircle: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(UIColor.secondarySystemFill), lineWidth: 14)
+                .stroke(Color("Separator").opacity(0.65), lineWidth: 12)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(LinearGradient(colors: [Color("Primary"), Color("Primary").opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .stroke(LinearGradient(colors: [Color("Primary"), Color("Primary").opacity(0.65)], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 12, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut(duration: 0.3), value: progress)
             VStack(spacing: 4) {
@@ -386,5 +456,8 @@ private struct ProgressCircle: View {
             }
         }
         .padding(12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Progression des objectifs")
+        .accessibilityValue("\(Int(progress * 100)) pour cent, \(done) sur \(total)")
     }
 }
