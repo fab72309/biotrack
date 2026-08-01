@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.4 — prochaine version
+
+### Expérience des fenêtres
+
+- La fenêtre Objectifs adopte une hiérarchie plus claire : progression,
+  période active et actions à réaliser sont séparées visuellement.
+- Le sélecteur Aujourd'hui / 7 jours / 30 jours est plus lisible et plus
+  facile à toucher, avec un état sélectionné explicite.
+- Les feuilles iOS partagent désormais le même fond, le même rayon et le
+  même indicateur de glissement pour une expérience cohérente dans toute
+  l'application.
+- Les boutons de fermeture et les états de progression restent accessibles
+  avec VoiceOver et les grandes tailles de texte.
+
 ## 1.2.3 — prochaine version
 
 ### Associations et accessibilité

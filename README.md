@@ -4,7 +4,7 @@
 
 BioTrack est une application SwiftUI de suivi personnel centrée sur les routines, métriques, check-ins, protocoles et suppléments. Les données restent sur l’appareil, sans compte ni backend BioTrack.
 
-La version 1.1.0 renforce la fiabilité des associations temporelles, améliore les comparaisons entre unités différentes et rend les graphiques, légendes et périodes sans mesure plus explicites. BioTrack comprend aussi des expériences N-of-1, HealthKit en lecture, des widgets, les Live Activities et des sauvegardes chiffrées.
+La version 1.2.4 renforce la fiabilité des associations temporelles, améliore les comparaisons entre unités différentes et rend les graphiques, légendes et fenêtres de l'application plus explicites. BioTrack comprend aussi des expériences N-of-1, HealthKit en lecture, des widgets, les Live Activities et des sauvegardes chiffrées.
 
 ## Quickstart
 
@@ -35,6 +35,10 @@ La version 1.1.0 renforce la fiabilité des associations temporelles, améliore 
 - iOS 15+ pour l’app principale ;
 - iOS 17+ pour le widget et la Live Activity ;
 - HealthKit est facultatif et utilisé en lecture uniquement.
+
+## Android
+
+La cible Android native se trouve dans [`android/`](android/). Elle reprend le parcours local BioTrack avec Kotlin/Jetpack Compose et remplace HealthKit par Health Connect facultatif. Voir [`android/README.md`](android/README.md) et [`docs/google-play-android-release.md`](docs/google-play-android-release.md) pour la compilation, les limites connues et la préparation Play Store.
 
 ## Project structure
 
