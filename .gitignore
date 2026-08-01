@@ -62,3 +62,10 @@ fastlane/test_output
 
 # Generated App Store release assets
 AppStoreScreenshots/
+
+# Android/Gradle
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
+*.iml

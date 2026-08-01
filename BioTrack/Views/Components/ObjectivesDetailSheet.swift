@@ -333,33 +333,37 @@ struct ObjectivesDetailPopup: View {
                 .fill(Color.secondary.opacity(0.35))
                 .frame(width: 36, height: 5)
                 .padding(.top, 8)
-                .padding(.bottom, 14)
+                .padding(.bottom, 16)
 
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Objectifs")
-                        .font(.title3.weight(.bold))
-                    Text(titleForPage(pageIndex))
-                        .font(.subheadline.weight(.medium))
+                        .font(.title2.weight(.bold))
+                    Text("Un aperçu simple de vos habitudes")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                BioTrackModalCloseButton { dismiss() }
+                BioTrackModalCloseButton(
+                    action: { dismiss() },
+                    accessibilityLabel: "Fermer les objectifs"
+                )
             }
             .padding(.horizontal, 20)
 
-            HStack(spacing: 16) {
+            HStack(alignment: .center, spacing: 18) {
                 ProgressCircle(days: daysFor(pageIndex))
                     .environmentObject(state)
-                    .frame(width: 112, height: 112)
+                    .frame(width: 104, height: 104)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("Progression", systemImage: "chart.pie.fill")
+                    Label(titleForPage(pageIndex), systemImage: "calendar")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color("Primary"))
-                    Text("Objectifs réalisés")
+                    Text("Progression des objectifs")
                         .font(.headline)
-                    Text("Sur la période sélectionnée")
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Les actions à faire restent visibles en premier.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -367,23 +371,19 @@ struct ObjectivesDetailPopup: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color("Background"))
+                    .fill(Color("Surface"))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color("Separator"), lineWidth: 0.5)
+                .stroke(Color("Separator"), lineWidth: 0.5)
             )
             .padding(.horizontal, 20)
-            .padding(.top, 18)
+            .padding(.top, 20)
 
-            ObjectivesDetailContent(pageIndex: $pageIndex)
-                .environmentObject(state)
-                .frame(maxHeight: .infinity)
-
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { idx in
                     let label = ["Aujourd'hui", "7 jours", "30 jours"][idx]
                     Button {
@@ -392,20 +392,26 @@ struct ObjectivesDetailPopup: View {
                         Text(label)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(idx == pageIndex ? Color("OnPrimary") : .secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
                             .background(
                                 Capsule()
-                                    .fill(idx == pageIndex ? Color("Primary") : Color("Background"))
+                                    .fill(idx == pageIndex ? Color("Primary") : Color.clear)
                             )
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(idx == pageIndex ? [.isSelected] : [])
                 }
             }
+            .padding(4)
+            .background(Color(UIColor.secondarySystemBackground), in: Capsule())
             .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.top, 14)
+
+            ObjectivesDetailContent(pageIndex: $pageIndex)
+                .environmentObject(state)
+                .frame(maxHeight: .infinity)
+                .padding(.top, 4)
         }
         .background(Color("Background").ignoresSafeArea())
         .withSheetDetentsIfAvailable()
