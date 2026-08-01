@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.3 — prochaine version
+
+### Associations et accessibilité
+
+- Les détails statistiques des associations sont présentés dans une grille
+  lisible, sans défilement horizontal obligatoire.
+- Les coefficients Pearson, Spearman et sans tendance utilisent une notation
+  décimale adaptée au français.
+- Le coefficient de Pearson est décrit plus précisément par VoiceOver, avec
+  son sens et son échelle de −1 à +1.
+
 ## 1.2.2 — prochaine version
 
 ### Statistiques et graphiques

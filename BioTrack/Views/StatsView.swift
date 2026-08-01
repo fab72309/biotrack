@@ -381,15 +381,28 @@ struct StatsView: View {
             CorrelationBar(value: insight.pearson, color: color)
                 .frame(height: 18)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    correlationStat("Pearson r", value: String(format: "%.2f", insight.pearson))
-                    correlationStat("Rang ρ", value: String(format: "%.2f", spearman))
-                    correlationStat("Sans tendance r", value: String(format: "%.2f", trendAdjusted))
-                    correlationStat("Jours alignés", value: "\(insight.sampleSize)")
-                    correlationStat("Jours utiles", value: "\(effectiveSampleSize)")
-                    correlationStat("IC 95 %", value: interval)
-                    correlationStat("q ajusté", value: adjustedPValue)
+            Text("Détails statistiques")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+            let stats: [(String, String)] = [
+                ("Pearson r", correlationNumber(insight.pearson)),
+                ("Rang ρ", correlationNumber(spearman)),
+                ("Sans tendance r", correlationNumber(trendAdjusted)),
+                ("Jours alignés", "\(insight.sampleSize)"),
+                ("Jours utiles", "\(effectiveSampleSize)"),
+                ("IC 95 %", interval),
+                ("q ajusté", adjustedPValue)
+            ]
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(minimum: 120), alignment: .leading),
+                    GridItem(.flexible(minimum: 120), alignment: .leading)
+                ],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(Array(stats.enumerated()), id: \.offset) { _, stat in
+                    correlationStat(stat.0, value: stat.1)
                 }
             }
         }
@@ -405,6 +418,17 @@ struct StatsView: View {
             Text(value)
                 .font(.caption.monospacedDigit().weight(.semibold))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(9)
+        .background(
+            Color(UIColor.secondarySystemBackground),
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private func correlationNumber(_ value: Double) -> String {
+        String(format: "%.2f", value).replacingOccurrences(of: ".", with: ",")
     }
 
     private var experimentsPanel: some View {
@@ -958,7 +982,7 @@ struct StatsView: View {
         guard let lower = insight.confidenceLower, let upper = insight.confidenceUpper else {
             return "—"
         }
-        return String(format: "[%.2f ; %.2f]", lower, upper)
+        return "[\(correlationNumber(lower)) ; \(correlationNumber(upper))]"
     }
 
     private func adjustedPValueText(_ insight: CorrelationInsight) -> String {
@@ -1041,8 +1065,10 @@ private struct CorrelationBar: View {
                 .padding(.horizontal, 5)
             }
         }
-        .accessibilityLabel(value >= 0 ? "Association positive" : "Association négative")
-        .accessibilityValue(String(format: "%.2f", value))
+        .accessibilityLabel("Coefficient de corrélation de Pearson")
+        .accessibilityValue(
+            "\(value >= 0 ? "Association positive" : "Association négative"), \(String(format: "%.2f", value).replacingOccurrences(of: ".", with: ",")) sur une échelle de moins un à plus un"
+        )
     }
 }
 
