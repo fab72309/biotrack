@@ -32,6 +32,7 @@ struct MultiSeriesChart: View {
 	let valueFormatter: ((Double) -> String)?
 	let avgLineValue: Double?
 	let showLegend: Bool
+	let showTemporalGaps: Bool
 
 	private struct HoverSelection {
 		let point: CGPoint
@@ -39,6 +40,32 @@ struct MultiSeriesChart: View {
 	}
 
 	@State private var hover: HoverSelection? = nil
+
+	init(
+		series: [ChartSeries],
+		style: StatsView.ChartStyle,
+		unit: String,
+		yAxisMode: YAxisMode,
+		ticks: [Date]?,
+		yMinForced: Double?,
+		yMaxForced: Double?,
+		valueFormatter: ((Double) -> String)?,
+		avgLineValue: Double?,
+		showLegend: Bool,
+		showTemporalGaps: Bool = true
+	) {
+		self.series = series
+		self.style = style
+		self.unit = unit
+		self.yAxisMode = yAxisMode
+		self.ticks = ticks
+		self.yMinForced = yMinForced
+		self.yMaxForced = yMaxForced
+		self.valueFormatter = valueFormatter
+		self.avgLineValue = avgLineValue
+		self.showLegend = showLegend
+		self.showTemporalGaps = showTemporalGaps
+	}
 
 	var body: some View {
 		GeometryReader { geo in
@@ -49,15 +76,17 @@ struct MultiSeriesChart: View {
 						if style == .line {
 							ForEach(series) { s in
 								if series.count == 1 { areaPath(s, in: rect).fill(s.color.opacity(0.12)) }
-								gapPath(s, in: rect)
-									.stroke(
-										s.color.opacity(0.28),
-										style: StrokeStyle(
-											lineWidth: 1.2,
-											lineCap: .round,
-											dash: [1, 5]
+								if showTemporalGaps {
+									gapPath(s, in: rect)
+										.stroke(
+											s.color.opacity(0.28),
+											style: StrokeStyle(
+												lineWidth: 1.2,
+												lineCap: .round,
+												dash: [1, 5]
+											)
 										)
-									)
+								}
 								linePath(s, in: rect)
 									.stroke(
 										s.color,
@@ -141,7 +170,7 @@ struct MultiSeriesChart: View {
 					.foregroundColor(.secondary)
 					.rotationEffect(.degrees(-90))
 					.position(x: 10, y: (topPadding + (r.height-bottomPadding)) / 2)
-			let tickDates = ticks ?? defaultTicks()
+			let tickDates = displayTickDates(from: ticks ?? defaultTicks(), width: r.width)
 			if let first = tickDates.first, let last = tickDates.last {
 				ForEach(tickDates, id: \.self) { d in
 					let x = xPosition(for: d, first: first, last: last, width: r.width)
@@ -226,13 +255,9 @@ struct MultiSeriesChart: View {
 		let uniqueDates = Array(Set(all.map { $0.date })).sorted()
 		var slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(max(uniqueDates.count, 1))
 		if let t = ticks, let first = t.first, let last = t.last {
-			let cal = Calendar.current
-			let days = max(1, Int((cal.startOfDay(for: last).timeIntervalSince1970 - cal.startOfDay(for: first).timeIntervalSince1970) / 86400))
-			slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(days)
+			slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(dayCount(from: first, to: last))
 		} else if let (d0, d1) = dateRange() {
-			let cal = Calendar.current
-			let days = max(1, Int((cal.startOfDay(for: d1).timeIntervalSince1970 - cal.startOfDay(for: d0).timeIntervalSince1970) / 86400))
-			slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(days)
+			slotWidth = (r.width - leftPadding - rightPadding) / CGFloat(dayCount(from: d0, to: d1))
 		}
 		let groupWidth = max(8, slotWidth * 0.7)
 		let barWidth = max(4, min(22, groupWidth / CGFloat(max(series.count, 1))))
@@ -357,6 +382,34 @@ struct MultiSeriesChart: View {
 		let all = series.flatMap { $0.points }
 		guard let minD = all.map(\.date).min(), let maxD = all.map(\.date).max() else { return nil }
 		return (minD, maxD)
+	}
+
+	private func dayCount(from start: Date, to end: Date) -> Int {
+		let calendar = Calendar.current
+		let startDay = calendar.startOfDay(for: start)
+		let endDay = calendar.startOfDay(for: end)
+		let difference = calendar.dateComponents([.day], from: startDay, to: endDay).day ?? 0
+		return max(1, difference + 1)
+	}
+
+	/// Keep a readable number of labels on narrow phones while preserving the
+	/// first and last date as visual anchors. Data coordinates still use the
+	/// complete range; only the labels are thinned here.
+	private func displayTickDates(from dates: [Date], width: CGFloat) -> [Date] {
+		let sorted = Array(Set(dates)).sorted()
+		guard sorted.count > 2 else { return sorted }
+		let plotWidth = max(width - leftPadding - rightPadding, 1)
+		let maximumLabels = max(2, Int(floor(plotWidth / 54)))
+		guard sorted.count > maximumLabels else { return sorted }
+
+		let stride = Int(ceil(Double(sorted.count - 1) / Double(maximumLabels - 1)))
+		var kept = sorted.enumerated().compactMap { index, date in
+			index % max(stride, 1) == 0 ? date : nil
+		}
+		if let last = sorted.last, kept.last != last {
+			kept.append(last)
+		}
+		return kept
 	}
 
 	private func shortDate(_ d: Date) -> String {

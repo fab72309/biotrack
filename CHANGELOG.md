@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.2.2 — prochaine version
+
+### Statistiques et graphiques
+
+- Les moyennes affichées correspondent désormais aux moyennes quotidiennes,
+  comme les points de la courbe : une journée avec plusieurs saisies ne pèse
+  plus plusieurs fois dans le résumé.
+- Les graduations de l’axe des dates s’adaptent à la largeur de l’écran pour
+  rester lisibles sur iPhone, tout en conservant les bornes de la période.
+- Les barres utilisent une largeur calibrée sur le nombre réel de jours, afin
+  d’éviter les colonnes trop larges ou trop serrées.
+- Les jours planifiés sans réalisation apparaissent à zéro dans les graphiques
+  de protocoles et de suppléments, avec une explication directement sous le
+  graphique.
+- Les segments pointillés restent réservés aux journées sans mesure pour les
+  métriques ; ils ne suggèrent plus une absence de donnée les jours où un
+  protocole hebdomadaire n’était pas planifié.
+
+### Expérience et transparence
+
+- Les légendes et messages d’aide expliquent plus clairement la période,
+  l’agrégation quotidienne et la lecture des jours à zéro.
+- Les associations restent exploratoires : elles ne constituent ni un
+  diagnostic, ni une preuve de causalité, ni un conseil médical.
+
 ## 1.2.1 — prochaine version
 
 ### Fiabilité et performance
