@@ -36,8 +36,9 @@ et les licences acceptées, la commande suivante passe :
 Résultat contrôlé : **6 tests unitaires, 0 échec, 0 erreur**, lint sans erreur
 bloquante et bundle `app/build/outputs/bundle/release/app-release.aab` généré
 (SHA-256 `269d897344f1d67a25c209f4d5afb5a6d6027351f37c8ec3cbe6914cb9fcca05`).
-Lint signale seulement des versions plus récentes disponibles et deux
-avertissements d’icônes dépréciées dans une autre partie de l’application.
+Lint signale seulement des versions plus récentes de la toolchain et des
+dépendances disponibles ; aucune erreur bloquante ni avertissement de code
+applicatif ne subsiste.
 Le bundle est volontairement non signé tant que les quatre variables de
 keystore ne sont pas fournies.
 

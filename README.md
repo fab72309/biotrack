@@ -66,7 +66,7 @@ Le schéma `BioTrack` contient les tests unitaires du moteur statistique. La CI 
 xcodebuild \
   -project BioTrack.xcodeproj \
   -scheme BioTrack \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   test
 ```
 
