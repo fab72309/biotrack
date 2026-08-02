@@ -92,12 +92,14 @@ fun StatsScreen(viewModel: BioTrackViewModel) {
                         val b = Statistics.robustStandardScores(days.map { seriesB.getValue(it).value })
                         AccessibleComparisonChart(
                             listOf(a, b),
+                            days = days,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             LegendDot(MaterialTheme.colorScheme.primary, metricA?.name ?: "A")
                             LegendDot(MaterialTheme.colorScheme.secondary, metricB?.name ?: "B")
                         }
+                        Text("${days.size} jours communs · les journées sans mesure dans l’une des séries sont exclues.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                     } else Text("Il faut au moins trois journées alignées pour comparer les séries.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -123,6 +125,12 @@ fun StatsScreen(viewModel: BioTrackViewModel) {
                                 InsightStat("Spearman", insight.spearman?.formatCorrelation() ?: "—", Modifier.weight(1f))
                                 InsightStat("Jours", insight.sampleSize.toString(), Modifier.weight(1f))
                             }
+                            Text(
+                                "IC95 % ${formatInterval(insight.confidenceLower, insight.confidenceUpper)} · n effectif ${insight.effectiveSampleSize ?: "—"} · q ${insight.adjustedPValue?.formatPValue() ?: "—"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
                             Text("${insight.evidence?.displayName ?: "À confirmer"} · exploratoire", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
                         }
                     }
@@ -206,8 +214,12 @@ private fun InsightStat(label: String, value: String, modifier: Modifier = Modif
 
 private fun Double.formatCorrelation(): String = String.format(Locale.FRENCH, "%.2f", this)
 
+private fun Double.formatPValue(): String = if (this < 0.001) "<0,001" else String.format(Locale.FRENCH, "%.3f", this)
+
+private fun formatInterval(lower: Double?, upper: Double?): String = if (lower == null || upper == null) "—" else "[${lower.formatCorrelation()} ; ${upper.formatCorrelation()}]"
+
 @Composable
-private fun AccessibleComparisonChart(series: List<List<Double>>, modifier: Modifier = Modifier) {
+private fun AccessibleComparisonChart(series: List<List<Double>>, days: List<Long>, modifier: Modifier = Modifier) {
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(
@@ -220,18 +232,24 @@ private fun AccessibleComparisonChart(series: List<List<Double>>, modifier: Modi
                 Text("0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("−3", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            ComparisonChart(series, modifier = Modifier.weight(1f).height(180.dp))
+            ComparisonChart(series, days, modifier = Modifier.weight(1f).height(180.dp))
         }
-        Row(modifier = Modifier.padding(start = 28.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Début", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Fin", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(modifier = Modifier.padding(start = 28.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(formatChartDate(days.firstOrNull()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatChartDate(days.getOrNull(days.lastIndex / 2)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatChartDate(days.lastOrNull()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text("Valeurs standardisées · 0 correspond à la médiane de la série", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
+private fun formatChartDate(timestamp: Long?): String = timestamp?.let {
+    java.time.format.DateTimeFormatter.ofPattern("dd/MM", Locale.FRENCH)
+        .format(java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()))
+} ?: "—"
+
 @Composable
-private fun ComparisonChart(series: List<List<Double>>, modifier: Modifier = Modifier) {
+private fun ComparisonChart(series: List<List<Double>>, days: List<Long>, modifier: Modifier = Modifier) {
     val colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
     val outline = MaterialTheme.colorScheme.outline
     Canvas(modifier) {
@@ -243,19 +261,33 @@ private fun ComparisonChart(series: List<List<Double>>, modifier: Modifier = Mod
                 strokeWidth = 1.dp.toPx()
             )
         }
+        if (days.size < 2) return@Canvas
+        val startDay = days.first()
+        val daySpan = (days.last() - startDay).coerceAtLeast(1L)
         series.forEachIndexed { seriesIndex, values ->
-            if (values.size < 2) return@forEachIndexed
+            if (values.size < 2 || values.size != days.size) return@forEachIndexed
             val path = Path()
             values.forEachIndexed { index, value ->
-                val x = size.width * index / (values.size - 1).toFloat()
+                val x = size.width * ((days[index] - startDay).toFloat() / daySpan.toFloat())
                 val y = size.height / 2f - value.coerceIn(-3.0, 3.0).toFloat() * (size.height / 6f)
-                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                val hasGap = index > 0 && formatDateGap(days[index - 1], days[index]) > 1
+                if (index == 0 || hasGap) path.moveTo(x, y) else path.lineTo(x, y)
             }
             drawPath(path, colors[seriesIndex % colors.size], style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
+            values.forEachIndexed { index, value ->
+                val x = size.width * ((days[index] - startDay).toFloat() / daySpan.toFloat())
+                val y = size.height / 2f - value.coerceIn(-3.0, 3.0).toFloat() * (size.height / 6f)
+                drawCircle(colors[seriesIndex % colors.size], radius = 3.dp.toPx(), center = Offset(x, y))
+            }
         }
         drawLine(outline.copy(alpha = 0.35f), Offset(0f, size.height / 2f), Offset(size.width, size.height / 2f), strokeWidth = 1.dp.toPx())
     }
 }
+
+private fun formatDateGap(start: Long, end: Long): Long = java.time.temporal.ChronoUnit.DAYS.between(
+    java.time.Instant.ofEpochMilli(start).atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
+    java.time.Instant.ofEpochMilli(end).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+)
 
 @Composable
 private fun ExperimentDialog(metrics: List<Metric>, onDismiss: () -> Unit, onSave: (String, String, String, Int, Int) -> Unit) {

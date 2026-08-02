@@ -121,7 +121,13 @@ object Statistics {
             .sortedBy { it.day }
     }
 
-    fun generateInsights(snapshot: AppSnapshot, windowDays: Int = 90, now: Long = System.currentTimeMillis()): List<CorrelationInsight> {
+    fun generateInsights(
+        snapshot: AppSnapshot,
+        windowDays: Int = 90,
+        now: Long = System.currentTimeMillis(),
+        minSampleSize: Int = 12,
+        lags: List<Int> = DEFAULT_LAGS
+    ): List<CorrelationInsight> {
         if (snapshot.metrics.size < 2) return emptyList()
         val end = Planner.localDate(now)
         val start = end.minusDays((windowDays - 1).coerceAtLeast(1).toLong())
@@ -131,9 +137,9 @@ object Statistics {
             snapshot.metrics.drop(i + 1).forEach { metricB ->
                 val mapA = maps[metricA.id].orEmpty()
                 val mapB = maps[metricB.id].orEmpty()
-                listOf(0, 1, -1).forEach { lag ->
+                lags.distinct().forEach { lag ->
                     val pairs = alignedPairs(mapA, mapB, lag)
-                    if (pairs.size >= 8) {
+                    if (pairs.size >= minSampleSize.coerceAtLeast(4)) {
                         val estimate = estimate(pairs.map { it.first }, pairs.map { it.second })
                         if (estimate != null) candidates += Candidate(metricA, metricB, lag, estimate)
                     }
@@ -388,4 +394,6 @@ object Statistics {
     }
 
     private fun List<Double>.averageOrNull(): Double? = if (isEmpty()) null else average()
+
+    private val DEFAULT_LAGS = listOf(-2, -1, 0, 1, 2)
 }

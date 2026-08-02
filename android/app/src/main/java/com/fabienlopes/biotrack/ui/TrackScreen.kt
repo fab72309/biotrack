@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,9 @@ import com.fabienlopes.biotrack.data.BioTrackViewModel
 import com.fabienlopes.biotrack.data.Metric
 import com.fabienlopes.biotrack.data.MetricKind
 import com.fabienlopes.biotrack.domain.Statistics
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -77,8 +81,12 @@ fun TrackScreen(viewModel: BioTrackViewModel) {
             }
         } else {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    snapshot.metrics.forEach { metric ->
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(snapshot.metrics, key = { it.id }) { metric ->
                         FilterChip(
                             selected = metric.id == selectedMetric?.id,
                             onClick = { selectedMetricId = metric.id },
@@ -162,10 +170,29 @@ private fun MetricChartCard(metric: Metric, snapshot: com.fabienlopes.biotrack.d
         }
         Spacer(Modifier.height(12.dp))
         if (series.size >= 2) {
-            LineChart(series.map { it.value }, modifier = Modifier.fillMaxWidth().height(180.dp))
+            val values = series.map { it.value }
+            val median = values.sorted()[values.lastIndex / 2]
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.width(52.dp).height(180.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(formatValue(values.maxOrNull() ?: 0.0, metric.kind, metric.unit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    Text(formatValue(median, metric.kind, metric.unit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    Text(formatValue(values.minOrNull() ?: 0.0, metric.kind, metric.unit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                }
+                LineChart(series, modifier = Modifier.weight(1f).height(180.dp))
+            }
+            Row(modifier = Modifier.padding(start = 52.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(formatChartDate(series.first().day), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(formatChartDate(series.last().day), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatValue(series.first().value, metric.kind, metric.unit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(formatValue(series.last().value, metric.kind, metric.unit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Début · ${formatValue(series.first().value, metric.kind, metric.unit)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Fin · ${formatValue(series.last().value, metric.kind, metric.unit)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (series.zipWithNext().any { (left, right) -> daysBetween(left.day, right.day) > 1 }) {
+                Text("Les segments interrompus indiquent un jour sans saisie.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             Text("Ajoutez au moins deux journées pour afficher la tendance.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -174,29 +201,47 @@ private fun MetricChartCard(metric: Metric, snapshot: com.fabienlopes.biotrack.d
 }
 
 @Composable
-private fun LineChart(values: List<Double>, modifier: Modifier = Modifier) {
+private fun LineChart(points: List<com.fabienlopes.biotrack.domain.ChartPoint>, modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary
     val outline = MaterialTheme.colorScheme.outline
     Canvas(modifier = modifier) {
-        if (values.size < 2) return@Canvas
+        if (points.size < 2) return@Canvas
+        val values = points.map { it.value }
         val minValue = values.minOrNull() ?: 0.0
         val maxValue = values.maxOrNull() ?: 1.0
         val spread = (maxValue - minValue).takeIf { it > 0.000001 } ?: 1.0
-        val path = Path()
-        values.forEachIndexed { index, value ->
-            val x = size.width * index / (values.size - 1).toFloat()
-            val y = size.height - ((value - minValue) / spread).toFloat() * (size.height - 12.dp.toPx()) - 6.dp.toPx()
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        val startDay = points.first().day
+        val daySpan = (points.last().day - startDay).coerceAtLeast(1L)
+        val chartHeight = size.height - 12.dp.toPx()
+        val yFor = { value: Double -> size.height - ((value - minValue) / spread).toFloat() * chartHeight - 6.dp.toPx() }
+        listOf(0f, 0.5f, 1f).forEach { fraction ->
+            val y = 6.dp.toPx() + chartHeight * (1f - fraction)
+            drawLine(outline.copy(alpha = if (fraction == 0.5f) 0.4f else 0.18f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
         }
-        drawLine(outline.copy(alpha = 0.35f), Offset(0f, size.height - 6.dp.toPx()), Offset(size.width, size.height - 6.dp.toPx()), strokeWidth = 1.dp.toPx())
+        val path = Path()
+        points.forEachIndexed { index, point ->
+            val x = size.width * ((point.day - startDay).toFloat() / daySpan.toFloat())
+            val y = yFor(point.value)
+            val hasGap = index > 0 && daysBetween(points[index - 1].day, point.day) > 1
+            if (index == 0 || hasGap) path.moveTo(x, y) else path.lineTo(x, y)
+        }
         drawPath(path, primary, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
-        values.forEachIndexed { index, value ->
-            val x = size.width * index / (values.size - 1).toFloat()
-            val y = size.height - ((value - minValue) / spread).toFloat() * (size.height - 12.dp.toPx()) - 6.dp.toPx()
+        points.forEach { point ->
+            val x = size.width * ((point.day - startDay).toFloat() / daySpan.toFloat())
+            val y = yFor(point.value)
             drawCircle(primary, radius = 3.dp.toPx(), center = Offset(x, y))
         }
     }
 }
+
+private val chartDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM", Locale.FRENCH)
+
+private fun formatChartDate(timestamp: Long): String = chartDateFormatter.format(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()))
+
+private fun daysBetween(start: Long, end: Long): Long = java.time.temporal.ChronoUnit.DAYS.between(
+    Instant.ofEpochMilli(start).atZone(ZoneId.systemDefault()).toLocalDate(),
+    Instant.ofEpochMilli(end).atZone(ZoneId.systemDefault()).toLocalDate()
+)
 
 @Composable
 private fun AddMetricDialog(onDismiss: () -> Unit, onSave: (String, MetricKind, String?) -> Unit) {

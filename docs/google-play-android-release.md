@@ -3,7 +3,7 @@
 ## État de la cible
 
 - Application ID : `com.fabienlopes.biotrack`
-- Version : `1.1.0` / `versionCode 4`
+- Version : `1.2.4` / `versionCode 9`
 - Format de livraison : Android App Bundle (`.aab`)
 - Données : stockage privé local ; aucun compte BioTrack, backend ou permission Internet
 - Santé : lecture facultative via Health Connect, avec permissions limitées aux types réellement utilisés
@@ -24,20 +24,20 @@
 - [ ] Préparer l’icône, les captures Android, le nom court, la description, le support et les mentions légales.
 - [ ] Faire une piste de test interne puis une piste fermée avant toute publication publique.
 
-## Validation locale réalisée le 2 août 2026
+## Validation locale à refaire avant l’upload
 
-Avec le SDK Android 36 installé localement et les licences acceptées, les
-commandes suivantes passent :
+La procédure de validation reste :
 
 ```bash
 ./gradlew test lint bundleRelease -Dandroid.builder.sdkDownload=false
 ```
 
-Les tests unitaires et le bundle `.aab` sont valides. Le lint ne signale
-aucune erreur ; ses avertissements restants concernent uniquement des
-versions de SDK/dépendances plus récentes disponibles. Le bundle produit
-reste non signé tant que les quatre variables de keystore ne sont pas
-fournies.
+Dans le checkout actuel, cette commande est bloquée tant qu’un SDK Android
+36 n’est pas installé et référencé par `ANDROID_HOME` ou
+`android/local.properties`. Une compilation précédente documentée avec ce
+SDK avait produit les tests, le lint et le bundle ; elle ne remplace pas une
+revalidation après les changements 1.2.4. Le bundle reste non signé tant que
+les quatre variables de keystore ne sont pas fournies.
 
 ## Limites connues et équivalences iOS
 

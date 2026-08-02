@@ -13,6 +13,11 @@
   l'application.
 - Les boutons de fermeture et les états de progression restent accessibles
   avec VoiceOver et les grandes tailles de texte.
+- La cible Android suit la même version et améliore la lisibilité du suivi :
+  métriques défilables, axes et dates visibles, trous de saisie conservés
+  dans les courbes et résumé explicite des journées comparées.
+- Les corrélations Android appliquent désormais la même fenêtre de preuve que
+  l’iOS : au moins 12 journées alignées et des décalages de −2 à +2 jours.
 
 ## 1.2.3 — prochaine version
 

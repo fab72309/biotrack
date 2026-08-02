@@ -23,8 +23,8 @@ android {
         applicationId = "com.fabienlopes.biotrack"
         minSdk = 28
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.1.0"
+        versionCode = 9
+        versionName = "1.2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

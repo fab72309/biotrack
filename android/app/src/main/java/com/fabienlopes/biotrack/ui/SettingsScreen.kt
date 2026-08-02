@@ -189,7 +189,7 @@ fun SettingsScreen(viewModel: BioTrackViewModel, onClose: () -> Unit) {
                 TextButton(onClick = { legalDocument = LegalDocument.SUPPORT }) { Text("Support") }
                 TextButton(onClick = { legalDocument = LegalDocument.TERMS }) { Text("Conditions d'utilisation") }
                 TextButton(onClick = { showResetOnboarding = true }) { Text("Revoir l'accueil") }
-                Text("Version Android 1.1.0 (4)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Version Android 1.2.4 (9)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(24.dp))
         }
