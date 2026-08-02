@@ -22,3 +22,11 @@ actions restantes sont maintenant regroupées dans une hiérarchie plus facile
 BioTrack reste un outil d'auto-observation personnelle. Les statistiques et
 associations sont exploratoires et ne constituent ni un diagnostic, ni une
 preuve de causalité, ni un conseil médical.
+
+## Version courte pour la description YouTube
+
+Dans cette mise à jour, BioTrack rend la fenêtre Objectifs plus claire,
+harmonise les fenêtres de l’application et améliore la lecture des graphiques
+et des associations exploratoires. Les données restent privées et les
+statistiques servent à observer ses habitudes, sans diagnostic ni conseil
+médical.

@@ -37,6 +37,13 @@ par le titulaire du compte à partir du comportement réel de la build.
 - Les associations affichent plus clairement leurs indicateurs et leurs
   limites ; elles restent exploratoires et ne prouvent aucune causalité.
 
+## Texte public court (YouTube / réseaux)
+
+BioTrack 1.2.4 améliore la fenêtre Objectifs, harmonise les fenêtres de
+l’application et rend les graphiques et associations exploratoires plus
+lisibles. Vos données restent privées ; BioTrack aide à observer vos habitudes
+et ne fournit ni diagnostic ni conseil médical.
+
 ## Notes pour App Review / TestFlight
 
 BioTrack ne nécessite aucun compte. Les données restent locales sur l’appareil
