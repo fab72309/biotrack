@@ -14,7 +14,7 @@
 - [ ] Remplacer la clé de signature de démonstration par une clé Play App Signing gérée par le propriétaire du compte.
 - [ ] Générer puis conserver hors du dépôt le keystore et ses mots de passe.
 - [ ] Injecter `BIOTRACK_RELEASE_KEYSTORE`, `BIOTRACK_RELEASE_STORE_PASSWORD`, `BIOTRACK_RELEASE_KEY_ALIAS` et `BIOTRACK_RELEASE_KEY_PASSWORD` uniquement dans l’environnement de build ; le script n’active la signature release que si les quatre valeurs sont présentes.
-- [ ] Vérifier `./gradlew test`, `./gradlew lint` et `./gradlew bundleRelease` sur une machine équipée du SDK 36.
+- [x] Vérifier `./gradlew test`, `./gradlew lint` et `./gradlew bundleRelease` avec le SDK 36 (6 tests sans échec, lint sans erreur bloquante, AAB générée ; signature encore absente).
 - [ ] Tester l’installation et la mise à jour sur au moins un appareil Android 13+ et un Android 14+.
 - [ ] Tester le refus des notifications, l’absence de Health Connect, le refus Health Connect, l’import JSON invalide et un mot de passe de sauvegarde incorrect.
 - [ ] Tester les rappels avec l’application fermée et vérifier le canal de notification.
