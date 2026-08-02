@@ -373,90 +373,94 @@ struct WelcomeStepView: View {
             let logoSize: CGFloat = compact ? 122 : 176
             let titleSize: CGFloat = compact ? 28 : 32
 
-            VStack(spacing: compact ? 18 : 26) {
-                Spacer(minLength: compact ? 4 : 16)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: compact ? 18 : 26) {
+                    Spacer(minLength: compact ? 4 : 16)
 
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.78))
-                        .frame(width: emblemSize, height: emblemSize)
-                        .shadow(color: Color.blue.opacity(0.14), radius: compact ? 18 : 28, x: 0, y: compact ? 12 : 18)
-                    Circle()
-                        .stroke(Color.blue.opacity(0.12), lineWidth: 1)
-                        .frame(width: emblemSize, height: emblemSize)
-                    Image("OnboardingLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: logoSize, height: logoSize)
-                }
-
-                VStack(spacing: compact ? 10 : 14) {
-                    Text(NSLocalizedString("onboarding.welcome.title", comment: ""))
-                        .font(.system(size: titleSize, weight: .bold, design: .rounded))
-                        .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.welcome.subtitle", comment: ""))
-                        .font(compact ? .subheadline : .body)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .lineLimit(compact ? 3 : 4)
-                }
-
-                VStack(spacing: compact ? 8 : 12) {
-                    WelcomeBenefitRow(
-                        systemImage: "checkmark.circle.fill",
-                        text: NSLocalizedString("onboarding.welcome.benefit.1", comment: ""),
-                        compact: compact
-                    )
-                    WelcomeBenefitRow(
-                        systemImage: "heart.text.square.fill",
-                        text: NSLocalizedString("onboarding.welcome.benefit.2", comment: ""),
-                        compact: compact
-                    )
-                    WelcomeBenefitRow(
-                        systemImage: "shield.lefthalf.filled",
-                        text: NSLocalizedString("onboarding.welcome.benefit.3", comment: ""),
-                        compact: compact
-                    )
-                }
-
-                Spacer(minLength: 0)
-
-                VStack(spacing: compact ? 10 : 14) {
-                    Button(action: onContinue) {
-                        Text(NSLocalizedString("onboarding.welcome.primary", comment: ""))
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, compact ? 14 : 16)
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.78))
+                            .frame(width: emblemSize, height: emblemSize)
+                            .shadow(color: Color.blue.opacity(0.14), radius: compact ? 18 : 28, x: 0, y: compact ? 12 : 18)
+                        Circle()
+                            .stroke(Color.blue.opacity(0.12), lineWidth: 1)
+                            .frame(width: emblemSize, height: emblemSize)
+                        Image("OnboardingLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: logoSize, height: logoSize)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.blue)
 
-                    VStack(spacing: compact ? 6 : 10) {
-                        Text(NSLocalizedString("onboarding.welcome.legal_intro", comment: ""))
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                    VStack(spacing: compact ? 10 : 14) {
+                        Text(NSLocalizedString("onboarding.welcome.title", comment: ""))
+                            .font(.system(size: titleSize, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("onboarding.welcome.subtitle", comment: ""))
+                            .font(compact ? .subheadline : .body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-                        VStack(spacing: compact ? 4 : 8) {
-                            LegalLinkButton(title: NSLocalizedString("legal.privacy.title", comment: "")) {
-                                onOpenDocument(.privacy)
-                            }
-                            LegalLinkButton(title: NSLocalizedString("legal.support.title", comment: "")) {
-                                onOpenDocument(.support)
-                            }
-                            LegalLinkButton(title: NSLocalizedString("legal.terms.title", comment: "")) {
-                                onOpenDocument(.terms)
+                    VStack(spacing: compact ? 8 : 12) {
+                        WelcomeBenefitRow(
+                            systemImage: "checkmark.circle.fill",
+                            text: NSLocalizedString("onboarding.welcome.benefit.1", comment: ""),
+                            compact: compact
+                        )
+                        WelcomeBenefitRow(
+                            systemImage: "heart.text.square.fill",
+                            text: NSLocalizedString("onboarding.welcome.benefit.2", comment: ""),
+                            compact: compact
+                        )
+                        WelcomeBenefitRow(
+                            systemImage: "shield.lefthalf.filled",
+                            text: NSLocalizedString("onboarding.welcome.benefit.3", comment: ""),
+                            compact: compact
+                        )
+                    }
+
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: compact ? 10 : 14) {
+                        Button(action: onContinue) {
+                            Text(NSLocalizedString("onboarding.welcome.primary", comment: ""))
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, compact ? 14 : 16)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.blue)
+
+                        VStack(spacing: compact ? 6 : 10) {
+                            Text(NSLocalizedString("onboarding.welcome.legal_intro", comment: ""))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            VStack(spacing: compact ? 4 : 8) {
+                                LegalLinkButton(title: NSLocalizedString("legal.privacy.title", comment: "")) {
+                                    onOpenDocument(.privacy)
+                                }
+                                LegalLinkButton(title: NSLocalizedString("legal.support.title", comment: "")) {
+                                    onOpenDocument(.support)
+                                }
+                                LegalLinkButton(title: NSLocalizedString("legal.terms.title", comment: "")) {
+                                    onOpenDocument(.terms)
+                                }
                             }
                         }
                     }
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, compact ? 8 : 12)
+                .padding(.bottom, 18)
+                .frame(minHeight: proxy.size.height, alignment: .top)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, compact ? 8 : 12)
-            .padding(.bottom, 18)
-            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
 }
@@ -484,107 +488,110 @@ struct PermissionStepView: View {
             let heroIconSize: CGFloat = compact ? 42 : 54
             let titleSize: CGFloat = compact ? 24 : 28
 
-            VStack(alignment: .leading, spacing: compact ? 16 : 24) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text(badgeText)
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: compact ? 16 : 24) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(badgeText)
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.secondary)
 
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .fill(Color.white.opacity(0.74))
-                            .frame(height: heroHeight)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                            )
-                        Image(systemName: systemImage)
-                            .font(.system(size: heroIconSize, weight: .semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [tint.opacity(0.78), tint],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(Color.white.opacity(0.74))
+                                .frame(height: heroHeight)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
                                 )
-                            )
-                    }
+                            Image(systemName: systemImage)
+                                .font(.system(size: heroIconSize, weight: .semibold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [tint.opacity(0.78), tint],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        }
 
-                    Text(title)
-                        .font(.system(size: titleSize, weight: .bold, design: .rounded))
-                    Text(subtitle)
-                        .font(compact ? .subheadline : .body)
-                        .foregroundColor(.secondary)
-                        .lineLimit(compact ? 3 : 4)
-
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(statusTint)
-                            .frame(width: 10, height: 10)
-                        Text(statusText)
-                            .font(.footnote.weight(.semibold))
+                        Text(title)
+                            .font(.system(size: titleSize, weight: .bold, design: .rounded))
+                        Text(subtitle)
+                            .font(compact ? .subheadline : .body)
                             .foregroundColor(.secondary)
-                    }
-                }
+                            .fixedSize(horizontal: false, vertical: true)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(bullets, id: \.self) { bullet in
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .foregroundColor(tint)
-                                .padding(.top, 2)
-                            Text(bullet)
-                                .font(compact ? .subheadline : .body)
-                                .foregroundColor(.primary)
-                                .lineLimit(compact ? 3 : nil)
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(statusTint)
+                                .frame(width: 10, height: 10)
+                            Text(statusText)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundColor(.secondary)
                         }
                     }
-                }
-                .padding(compact ? 14 : 18)
-                .background(Color.white.opacity(0.62))
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                )
 
-                Spacer(minLength: 0)
-
-                Text(footnote)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .lineLimit(compact ? 3 : nil)
-
-                VStack(spacing: compact ? 6 : 10) {
-                    Button(action: onPrimary) {
-                        HStack(spacing: 10) {
-                            if isLoading {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.white)
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(bullets, id: \.self) { bullet in
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundColor(tint)
+                                    .padding(.top, 2)
+                                Text(bullet)
+                                    .font(compact ? .subheadline : .body)
+                                    .foregroundColor(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                            Text(primaryTitle)
-                                .font(.headline)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, compact ? 14 : 16)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(tint)
-                    .disabled(isLoading)
+                    .padding(compact ? 14 : 18)
+                    .background(Color.white.opacity(0.62))
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                    )
 
-                    Button(action: onSecondary) {
-                        Text(secondaryTitle)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.secondary)
+                    Spacer(minLength: 0)
+
+                    Text(footnote)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(spacing: compact ? 6 : 10) {
+                        Button(action: onPrimary) {
+                            HStack(spacing: 10) {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.white)
+                                }
+                                Text(primaryTitle)
+                                    .font(.headline)
+                            }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, compact ? 14 : 16)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(tint)
+                        .disabled(isLoading)
+
+                        Button(action: onSecondary) {
+                            Text(secondaryTitle)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, compact ? 18 : 28)
+                .frame(minHeight: proxy.size.height, alignment: .top)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, compact ? 18 : 28)
-            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
 }
@@ -777,7 +784,7 @@ private struct WelcomeBenefitRow: View {
             Text(text)
                 .font(compact ? .subheadline : .body)
                 .foregroundColor(.primary)
-                .lineLimit(compact ? 2 : nil)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
         }
         .padding(.horizontal, compact ? 14 : 16)

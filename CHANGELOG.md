@@ -18,6 +18,9 @@
   dans les courbes et résumé explicite des journées comparées.
 - Les corrélations Android appliquent désormais la même fenêtre de preuve que
   l’iOS : au moins 12 journées alignées et des décalages de −2 à +2 jours.
+- L’onboarding iOS devient défilable et conserve les textes complets avec les
+  grandes tailles de texte ; les actions et les informations légales restent
+  accessibles sans troncature.
 
 ## 1.2.3 — prochaine version
 

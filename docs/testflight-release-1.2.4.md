@@ -1,4 +1,4 @@
-# BioTrack 1.2.4 — notes de version TestFlight
+# BioTrack 1.2.4 (build 10) — notes de version TestFlight
 
 ## Résumé
 
@@ -16,6 +16,8 @@ actions restantes sont maintenant regroupées dans une hiérarchie plus facile
 - Tester la fenêtre en mode sombre et avec une taille de texte agrandie.
 - Ouvrir plusieurs feuilles (check-in, réglages, filtres) et vérifier que le
   rayon, le fond et l'indicateur de glissement sont cohérents.
+- Parcourir l'onboarding avec une taille de texte agrandie : les textes
+  doivent rester complets et le contenu doit pouvoir défiler jusqu'aux actions.
 
 ## Positionnement
 
