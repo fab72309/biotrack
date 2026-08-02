@@ -228,7 +228,8 @@ extension View {
         isDestructive: Bool = false,
         onConfirm: @escaping () -> Void
     ) -> some View {
-        overlay {
+        accessibilityHidden(isPresented.wrappedValue)
+        .overlay {
             if isPresented.wrappedValue {
                 BioTrackConfirmationOverlay(
                     title: title,
@@ -255,7 +256,8 @@ extension View {
         message: String,
         actionTitle: String = "OK"
     ) -> some View {
-        overlay {
+        accessibilityHidden(isPresented.wrappedValue)
+        .overlay {
             if isPresented.wrappedValue {
                 BioTrackNoticeOverlay(
                     title: title,
@@ -281,7 +283,8 @@ extension View {
         onPrimary: @escaping () -> Void,
         onSecondary: @escaping () -> Void
     ) -> some View {
-        overlay {
+        accessibilityHidden(isPresented.wrappedValue)
+        .overlay {
             if isPresented.wrappedValue {
                 BioTrackChoiceOverlay(
                     title: title,

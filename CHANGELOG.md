@@ -24,6 +24,8 @@
 - Les confirmations de suppression, d’import et de création de modèles
   partagent désormais la même surface visuelle, avec des actions plus lisibles
   et une fermeture accessible.
+- Lorsqu’une modale est ouverte, le contenu sous-jacent est masqué de la
+  navigation VoiceOver pour conserver un parcours focalisé.
 
 ## 1.2.3 — prochaine version
 

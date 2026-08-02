@@ -1,4 +1,4 @@
-# BioTrack 1.2.4 (build 11) — notes de version TestFlight
+# BioTrack 1.2.4 (build 12) — notes de version TestFlight
 
 ## Résumé
 
