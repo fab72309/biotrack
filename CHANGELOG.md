@@ -21,6 +21,9 @@
 - L’onboarding iOS devient défilable et conserve les textes complets avec les
   grandes tailles de texte ; les actions et les informations légales restent
   accessibles sans troncature.
+- Les confirmations de suppression, d’import et de création de modèles
+  partagent désormais la même surface visuelle, avec des actions plus lisibles
+  et une fermeture accessible.
 
 ## 1.2.3 — prochaine version
 

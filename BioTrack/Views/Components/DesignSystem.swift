@@ -82,6 +82,234 @@ struct BioTrackModalCloseButton: View {
     }
 }
 
+// MARK: - Confirmation and notice overlays
+
+/// Shared confirmation surface for destructive or consequential actions.
+/// Keeping this in the same modal system as the custom sheets avoids a mix of
+/// native alert chrome and the app's visual language.
+struct BioTrackConfirmationOverlay: View {
+    let title: String
+    let message: String
+    let confirmTitle: String
+    let cancelTitle: String
+    var isDestructive: Bool = false
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    var body: some View {
+        BioTrackPopupBackdrop(onDismiss: onCancel) {
+            BioTrackPopupCard {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(title)
+                                .font(.title3.weight(.bold))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(message)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer(minLength: 0)
+
+                        BioTrackModalCloseButton(action: onCancel)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button(cancelTitle, action: onCancel)
+                            .buttonStyle(.bordered)
+                            .frame(maxWidth: .infinity)
+
+                        Button(confirmTitle, action: onConfirm)
+                            .buttonStyle(.borderedProminent)
+                            .tint(isDestructive ? .red : Color("Primary"))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(22)
+            }
+        }
+        .accessibilityAddTraits(.isModal)
+    }
+}
+
+struct BioTrackNoticeOverlay: View {
+    let title: String
+    let message: String
+    let actionTitle: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        BioTrackPopupBackdrop(onDismiss: onDismiss) {
+            BioTrackPopupCard {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Text(title)
+                            .font(.title3.weight(.bold))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        BioTrackModalCloseButton(action: onDismiss)
+                    }
+
+                    Text(message)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button(actionTitle, action: onDismiss)
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color("Primary"))
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(22)
+            }
+        }
+        .accessibilityAddTraits(.isModal)
+    }
+}
+
+struct BioTrackChoiceOverlay: View {
+    let title: String
+    let message: String
+    let primaryTitle: String
+    let secondaryTitle: String
+    let cancelTitle: String
+    let onCancel: () -> Void
+    let onPrimary: () -> Void
+    let onSecondary: () -> Void
+
+    var body: some View {
+        BioTrackPopupBackdrop(onDismiss: onCancel) {
+            BioTrackPopupCard {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(title)
+                                .font(.title3.weight(.bold))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(message)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                        BioTrackModalCloseButton(action: onCancel)
+                    }
+
+                    VStack(spacing: 10) {
+                        Button(primaryTitle, action: onPrimary)
+                            .buttonStyle(.borderedProminent)
+                            .tint(Color("Primary"))
+                            .frame(maxWidth: .infinity)
+                        Button(secondaryTitle, action: onSecondary)
+                            .buttonStyle(.bordered)
+                            .frame(maxWidth: .infinity)
+                        Button(cancelTitle, action: onCancel)
+                            .buttonStyle(.plain)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(22)
+            }
+        }
+        .accessibilityAddTraits(.isModal)
+    }
+}
+
+extension View {
+    func bioTrackConfirmation(
+        isPresented: Binding<Bool>,
+        title: String,
+        message: String,
+        confirmTitle: String,
+        cancelTitle: String = "Annuler",
+        isDestructive: Bool = false,
+        onConfirm: @escaping () -> Void
+    ) -> some View {
+        overlay {
+            if isPresented.wrappedValue {
+                BioTrackConfirmationOverlay(
+                    title: title,
+                    message: message,
+                    confirmTitle: confirmTitle,
+                    cancelTitle: cancelTitle,
+                    isDestructive: isDestructive,
+                    onCancel: { isPresented.wrappedValue = false },
+                    onConfirm: {
+                        isPresented.wrappedValue = false
+                        onConfirm()
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isPresented.wrappedValue)
+    }
+
+    func bioTrackNotice(
+        isPresented: Binding<Bool>,
+        title: String,
+        message: String,
+        actionTitle: String = "OK"
+    ) -> some View {
+        overlay {
+            if isPresented.wrappedValue {
+                BioTrackNoticeOverlay(
+                    title: title,
+                    message: message,
+                    actionTitle: actionTitle,
+                    onDismiss: { isPresented.wrappedValue = false }
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isPresented.wrappedValue)
+    }
+
+    func bioTrackChoice(
+        isPresented: Binding<Bool>,
+        title: String,
+        message: String,
+        primaryTitle: String,
+        secondaryTitle: String,
+        cancelTitle: String = "Annuler",
+        onCancel: (() -> Void)? = nil,
+        onPrimary: @escaping () -> Void,
+        onSecondary: @escaping () -> Void
+    ) -> some View {
+        overlay {
+            if isPresented.wrappedValue {
+                BioTrackChoiceOverlay(
+                    title: title,
+                    message: message,
+                    primaryTitle: primaryTitle,
+                    secondaryTitle: secondaryTitle,
+                    cancelTitle: cancelTitle,
+                    onCancel: {
+                        isPresented.wrappedValue = false
+                        onCancel?()
+                    },
+                    onPrimary: {
+                        isPresented.wrappedValue = false
+                        onPrimary()
+                    },
+                    onSecondary: {
+                        isPresented.wrappedValue = false
+                        onSecondary()
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isPresented.wrappedValue)
+    }
+}
+
 // MARK: - Sheet Header
 
 struct SheetHeader: View {

@@ -94,15 +94,19 @@ struct SupplementsView: View {
 					}
 					.listStyle(.insetGrouped)
 					}
-					.alert("Supprimer le supplément ?", isPresented: $showDeleteAlert, presenting: toDeleteSupplement) { sup in
-						Button("Supprimer", role: .destructive) {
-							if let id = sup.id as UUID?, let idx = state.supplements.firstIndex(where: { $0.id == id }) {
-								state.supplements.remove(at: idx)
-								state.save()
-							}
-						}
-						Button("Annuler", role: .cancel) {}
-					} message: { sup in Text("Supprimer '\(sup.name)' ? Cette action est irréversible.") }
+					.bioTrackConfirmation(
+						isPresented: $showDeleteAlert,
+						title: "Supprimer le supplément ?",
+						message: deleteSupplementConfirmationMessage,
+						confirmTitle: "Supprimer",
+						isDestructive: true
+					) {
+						guard let supplement = toDeleteSupplement,
+							  let idx = state.supplements.firstIndex(where: { $0.id == supplement.id }) else { return }
+						state.supplements.remove(at: idx)
+						state.save()
+						toDeleteSupplement = nil
+					}
 				}
 
 				FloatingActionButton { showingAdd = true }
@@ -167,6 +171,11 @@ struct SupplementsView: View {
 // MARK: - Helpers
 extension SupplementsView {
 	private var isFilterActive: Bool { !categoryFilters.isEmpty || activeOnly }
+
+	private var deleteSupplementConfirmationMessage: String {
+		guard let supplement = toDeleteSupplement else { return "Cette action est irréversible." }
+		return "Supprimer ‘\(supplement.name)’ ? Cette action est irréversible."
+	}
 
 	private func groupedAndFiltered() -> [String: [Supplement]] {
 		var items = state.supplements

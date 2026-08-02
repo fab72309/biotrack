@@ -305,11 +305,11 @@ struct SettingsView: View {
                     importSecureSnapshot(passphrase: passphrase)
                 })
             }
-            .alert("Sauvegarde", isPresented: $showingImportAlert) {
-                Button("OK", role: .cancel) { importStatusMessage = nil }
-            } message: {
-                Text(importStatusMessage ?? "")
-            }
+            .bioTrackNotice(
+                isPresented: $showingImportAlert,
+                title: "Sauvegarde",
+                message: importStatusMessage ?? ""
+            )
             .sheet(item: $activeLegalDocument) { document in
                 LegalNoticeView(document: document)
             }

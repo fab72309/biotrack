@@ -169,24 +169,19 @@ struct AddSupplementForm: View {
 				}
 				.withSheetDetentsIfAvailable()
 			}
-			.confirmationDialog(
-				"Enregistrer dans les modèles ?",
+			.bioTrackChoice(
 				isPresented: $showSaveTemplatePrompt,
-				titleVisibility: .visible
-			) {
-				Button("Créer uniquement") {
-					finalizeCreate(saveAsTemplate: false)
-				}
-				Button("Créer + enregistrer le modèle") {
-					finalizeCreate(saveAsTemplate: true)
-				}
-				Button("Annuler", role: .cancel) {
+				title: "Enregistrer dans les modèles ?",
+				message: "Voulez-vous ajouter ce supplément à votre base de modèles personnalisés ?",
+				primaryTitle: "Créer uniquement",
+				secondaryTitle: "Créer + enregistrer le modèle",
+				onCancel: {
 					pendingSupplementForCreate = nil
 					pendingReminderForCreate = nil
-				}
-			} message: {
-				Text("Voulez-vous ajouter ce supplément à votre base de modèles personnalisés ?")
-			}
+				},
+				onPrimary: { finalizeCreate(saveAsTemplate: false) },
+				onSecondary: { finalizeCreate(saveAsTemplate: true) }
+			)
 		}
 
 	private func labelForFrequency(_ f: Frequency) -> String {

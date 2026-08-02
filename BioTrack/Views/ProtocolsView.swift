@@ -138,28 +138,30 @@ struct ProtocolsView: View {
                     }
                 }
             }
-            .confirmationDialog(
-                "Ajouter depuis la bibliothèque",
+            .bioTrackChoice(
                 isPresented: $showingTemplateAddOptions,
-                titleVisibility: .visible,
-                presenting: pendingTemplate
-            ) { template in
-                Button("Ajouter") {
-                    _ = addProtocolFromTemplate(template)
+                title: "Ajouter depuis la bibliothèque",
+                message: "Souhaitez-vous ajouter un rappel personnalisé pour ‘\(pendingTemplate?.name ?? "ce protocole")’ ?",
+                primaryTitle: "Ajouter",
+                secondaryTitle: "Ajouter + rappel personnalisé",
+                onPrimary: {
+                    if let template = pendingTemplate {
+                        _ = addProtocolFromTemplate(template)
+                    }
                     pendingTemplate = nil
-                }
-                Button("Ajouter + rappel personnalisé") {
+                },
+                onSecondary: {
+                    guard let template = pendingTemplate else { return }
                     let created = addProtocolFromTemplate(template)
-                    customReminderInitialData = defaultReminderData(for: created.name, preferredHour: template.hour, preferredMinute: template.minute)
+                    customReminderInitialData = defaultReminderData(
+                        for: created.name,
+                        preferredHour: template.hour,
+                        preferredMinute: template.minute
+                    )
                     showingCustomReminderSheet = true
                     pendingTemplate = nil
                 }
-                Button("Annuler", role: .cancel) {
-                    pendingTemplate = nil
-                }
-            } message: { template in
-                Text("Souhaitez-vous ajouter un rappel personnalisé pour '\(template.name)' ?")
-            }
+            )
             .sheet(isPresented: $showingCustomReminderSheet) {
                 ReminderSheet(initialData: customReminderInitialData) { data in
                     saveCustomReminder(data)
@@ -188,16 +190,25 @@ struct ProtocolsView: View {
                     }
                 }
             }
-            .alert("Supprimer le protocole ?", isPresented: $showDeleteAlert, presenting: toDeleteProtocol) { item in
-                Button("Supprimer", role: .destructive) {
-                    if let idx = state.protocols.firstIndex(where: { $0.id == item.id }) {
-                        state.protocols.remove(at: idx)
-                        state.save()
-                    }
-                }
-                Button("Annuler", role: .cancel) {}
-            } message: { item in Text("Supprimer '\(item.name)' ? Cette action est irréversible.") }
+            .bioTrackConfirmation(
+                isPresented: $showDeleteAlert,
+                title: "Supprimer le protocole ?",
+                message: deleteProtocolConfirmationMessage,
+                confirmTitle: "Supprimer",
+                isDestructive: true
+            ) {
+                guard let item = toDeleteProtocol,
+                      let idx = state.protocols.firstIndex(where: { $0.id == item.id }) else { return }
+                state.protocols.remove(at: idx)
+                state.save()
+                toDeleteProtocol = nil
+            }
         }
+    }
+
+    private var deleteProtocolConfirmationMessage: String {
+        guard let item = toDeleteProtocol else { return "Cette action est irréversible." }
+        return "Supprimer ‘\(item.name)’ ? Cette action est irréversible."
     }
 
     // MARK: - Grouping

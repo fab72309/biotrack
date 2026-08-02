@@ -208,19 +208,18 @@ struct TrackView: View {
             }
         }
         .sheet(isPresented: $showingFilter) { filterSheet }
-        .alert("Supprimer l’entrée ?", isPresented: $showDeleteAlert, presenting: toDeleteEntry) { entry in
-            Button("Supprimer", role: .destructive) {
-                if let idx = state.metricEntries.firstIndex(where: { $0.id == entry.id }) {
-                    state.metricEntries.remove(at: idx)
-                    state.save()
-                }
-            }
-            Button("Annuler", role: .cancel) {}
-        } message: { entry in
-            let mName = metricById(entry.metricId)?.name ?? "Métrique"
-            let df = DateFormatter(); df.dateStyle = .medium
-            let valueText = formattedValue(entry, metric: metricById(entry.metricId))
-            return Text("Supprimer l’entrée ‘\(mName)’ (\(valueText)) du \(df.string(from: entry.date)) ? Cette action est irréversible.")
+        .bioTrackConfirmation(
+            isPresented: $showDeleteAlert,
+            title: "Supprimer l’entrée ?",
+            message: deleteEntryConfirmationMessage,
+            confirmTitle: "Supprimer",
+            isDestructive: true
+        ) {
+            guard let entry = toDeleteEntry,
+                  let idx = state.metricEntries.firstIndex(where: { $0.id == entry.id }) else { return }
+            state.metricEntries.remove(at: idx)
+            state.save()
+            toDeleteEntry = nil
         }
         .sheet(item: $editingEntry) { entry in
             EditEntrySheet(entry: entry, metric: metricById(entry.metricId)) { updated, delete in
@@ -434,6 +433,15 @@ private extension TrackView {
     }
 
     func metricById(_ id: UUID) -> Metric? { state.metrics.first(where: { $0.id == id }) }
+
+    private var deleteEntryConfirmationMessage: String {
+        guard let entry = toDeleteEntry else { return "Cette action est irréversible." }
+        let mName = metricById(entry.metricId)?.name ?? "Métrique"
+        let df = DateFormatter()
+        df.dateStyle = .medium
+        let valueText = formattedValue(entry, metric: metricById(entry.metricId))
+        return "Supprimer l’entrée ‘\(mName)’ (\(valueText)) du \(df.string(from: entry.date)) ? Cette action est irréversible."
+    }
 
     func metricCategory(for metric: Metric) -> String {
         let lower = metric.name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).lowercased()

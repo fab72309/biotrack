@@ -1,4 +1,4 @@
-# BioTrack 1.2.4 (build 10) — notes de version TestFlight
+# BioTrack 1.2.4 (build 11) — notes de version TestFlight
 
 ## Résumé
 
@@ -18,6 +18,9 @@ actions restantes sont maintenant regroupées dans une hiérarchie plus facile
   rayon, le fond et l'indicateur de glissement sont cohérents.
 - Parcourir l'onboarding avec une taille de texte agrandie : les textes
   doivent rester complets et le contenu doit pouvoir défiler jusqu'aux actions.
+- Tester une suppression, un import échoué et un choix de modèle : les
+  confirmations doivent reprendre la même carte visuelle et rester lisibles
+  avec VoiceOver et les grandes tailles de texte.
 
 ## Positionnement
 

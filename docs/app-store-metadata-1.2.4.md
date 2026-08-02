@@ -1,6 +1,6 @@
 # Métadonnées App Store Connect — BioTrack 1.2.4
 
-Document prêt à copier dans App Store Connect pour la build **1.2.4 (10)**.
+Document prêt à copier dans App Store Connect pour la build **1.2.4 (11)**.
 Les réponses de confidentialité, de santé et d’export doivent être confirmées
 par le titulaire du compte à partir du comportement réel de la build.
 
@@ -11,7 +11,7 @@ par le titulaire du compte à partir du comportement réel de la build.
 - Catégorie principale : `Santé et remise en forme`
 - Catégorie secondaire : `Style de vie`
 - Version : `1.2.4`
-- Build : `10`
+- Build : `11`
 - Bundle ID : `com.fabienlopes.biotrack`
 - Classification proposée : `9+`
 
@@ -36,6 +36,8 @@ par le titulaire du compte à partir du comportement réel de la build.
   rayon et le même indicateur de glissement.
 - Les associations affichent plus clairement leurs indicateurs et leurs
   limites ; elles restent exploratoires et ne prouvent aucune causalité.
+- Les confirmations et choix sensibles utilisent désormais une même interface
+  cohérente, avec des boutons explicites et une fermeture accessible.
 
 ## Texte public court (YouTube / réseaux)
 

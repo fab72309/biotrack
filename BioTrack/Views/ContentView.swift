@@ -124,8 +124,7 @@ struct MainAppView: View {
             }
             WidgetEventLogger.log("widget_open_app_deeplink", metadata: ["destination": destination])
         }
-        .alert(
-            "Récupération des données",
+        .bioTrackNotice(
             isPresented: Binding(
                 get: { appState.storeRecoveryNoticeMessage != nil },
                 set: { presented in
@@ -133,14 +132,10 @@ struct MainAppView: View {
                         appState.dismissStoreRecoveryNotice()
                     }
                 }
-            )
-        ) {
-            Button("OK", role: .cancel) {
-                appState.dismissStoreRecoveryNotice()
-            }
-        } message: {
-            Text(appState.storeRecoveryNoticeMessage ?? "")
-        }
+            ),
+            title: "Récupération des données",
+            message: appState.storeRecoveryNoticeMessage ?? ""
+        )
     }
 
     private var dedupePolicy: HealthDedupePolicy {
