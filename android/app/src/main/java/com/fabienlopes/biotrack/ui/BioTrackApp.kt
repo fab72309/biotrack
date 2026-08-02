@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -52,7 +53,6 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
@@ -185,7 +185,7 @@ private fun MainScaffold(
                                 imageVector = when (tab) {
                                     AppTab.HOME -> Icons.Default.Home
                                     AppTab.TRACK -> Icons.Default.Tune
-                                    AppTab.STATS -> Icons.Default.ShowChart
+                                    AppTab.STATS -> Icons.AutoMirrored.Filled.ShowChart
                                     AppTab.PROTOCOLS -> Icons.Default.Flag
                                     AppTab.SUPPLEMENTS -> Icons.Default.Favorite
                                 },
@@ -235,7 +235,7 @@ private fun OnboardingScreen(viewModel: BioTrackViewModel) {
             Box(modifier = Modifier.size(92.dp).clip(CircleShape).background(primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = when (step) {
-                        0 -> Icons.Default.ShowChart
+                        0 -> Icons.AutoMirrored.Filled.ShowChart
                         1 -> Icons.Default.Notifications
                         else -> Icons.Default.Favorite
                     },

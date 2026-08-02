@@ -24,20 +24,22 @@
 - [ ] Préparer l’icône, les captures Android, le nom court, la description, le support et les mentions légales.
 - [ ] Faire une piste de test interne puis une piste fermée avant toute publication publique.
 
-## Validation locale à refaire avant l’upload
+## Validation locale réalisée le 2 août 2026
 
-La procédure de validation reste :
+Avec le SDK Android 36 installé dans `/opt/homebrew/share/android-commandlinetools`
+et les licences acceptées, la commande suivante passe :
 
 ```bash
 ./gradlew test lint bundleRelease -Dandroid.builder.sdkDownload=false
 ```
 
-Dans le checkout actuel, cette commande est bloquée tant qu’un SDK Android
-36 n’est pas installé et référencé par `ANDROID_HOME` ou
-`android/local.properties`. Une compilation précédente documentée avec ce
-SDK avait produit les tests, le lint et le bundle ; elle ne remplace pas une
-revalidation après les changements 1.2.4. Le bundle reste non signé tant que
-les quatre variables de keystore ne sont pas fournies.
+Résultat contrôlé : **6 tests unitaires, 0 échec, 0 erreur**, lint sans erreur
+bloquante et bundle `app/build/outputs/bundle/release/app-release.aab` généré
+(SHA-256 `269d897344f1d67a25c209f4d5afb5a6d6027351f37c8ec3cbe6914cb9fcca05`).
+Lint signale seulement des versions plus récentes disponibles et deux
+avertissements d’icônes dépréciées dans une autre partie de l’application.
+Le bundle est volontairement non signé tant que les quatre variables de
+keystore ne sont pas fournies.
 
 ## Limites connues et équivalences iOS
 
